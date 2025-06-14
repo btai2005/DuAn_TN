@@ -1,0 +1,79 @@
+/* src/AdminPanel.css */
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f0f2f5;
+}
+
+.admin-layout {
+  display: flex;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+}
+
+.admin-sidebar {
+  width: 220px;
+  background: #001529; /* Dark background for a professional look */
+  padding: 20px 0;
+  box-shadow: 2px 0 6px rgba(0, 0, 0, 0.1);
+}
+
+.admin-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-menu-item {
+  margin: 16px 0;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.65); /* Lighter text for dark background */
+  padding: 8px 20px;
+  border-radius: 6px;
+  transition: all 0.3s ease; /* Smooth transition for hover effects */
+}
+
+.admin-menu-item:hover {
+  color: #fff;
+  background: #1890ff; /* Ant Design primary blue */
+}
+
+.admin-menu-item.active {
+  color: #fff;
+  background: #1890ff; /* Active item background */
+  font-weight: bold;
+}
+
+.admin-content {
+  flex: 1;
+  padding: 32px;
+  background-color: #fff;
+  margin: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.09);
+}
+
+/* Styling for pages within admin content */
+.page-header {
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+/* General table and form styling for Ant Design components */
+.ant-table-wrapper {
+  margin-top: 20px;
+}
+
+.ant-form-item {
+  margin-bottom: 20px;
+} 
