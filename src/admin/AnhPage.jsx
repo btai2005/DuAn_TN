@@ -1,42 +1,42 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
-import { PictureOutlined, TagOutlined, LinkOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Space, message, Popconfirm, Upload } from 'antd';
+import { CameraOutlined, UploadOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
-
-const { Option } = Select;
 
 export default function AnhPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
 
+  // Dữ liệu giả định cho ảnh
   const [data, setData] = useState([
     {
       ID: '1',
-      MaAnh: 'IMG001',
-      url: 'https://example.com/image1.jpg',
-      TrangThai: 'Đang hoạt động',
+      MaAnh: 'A001',
+      TenAnh: 'Ảnh sản phẩm 1',
+      DuongDan: '/images/product1.jpg',
+      MoTa: 'Ảnh sản phẩm Nike Air Max',
     },
     {
       ID: '2',
-      MaAnh: 'IMG002',
-      url: 'https://example.com/image2.jpg',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '3',
-      MaAnh: 'IMG003',
-      url: 'https://example.com/image3.jpg',
-      TrangThai: 'Không hoạt động',
+      MaAnh: 'A002',
+      TenAnh: 'Ảnh sản phẩm 2',
+      DuongDan: '/images/product2.jpg',
+      MoTa: 'Ảnh sản phẩm Adidas Ultra Boost',
     },
   ]);
 
   const columns = [
     { title: 'Mã Ảnh', dataIndex: 'MaAnh', key: 'MaAnh' },
-    { title: 'URL Ảnh', dataIndex: 'url', key: 'url',
-      render: (text) => <a href={text} target="_blank" rel="noopener noreferrer">{text}</a>,
+    { title: 'Tên Ảnh', dataIndex: 'TenAnh', key: 'TenAnh' },
+    { 
+      title: 'Ảnh', 
+      key: 'DuongDan',
+      render: (_, record) => (
+        <img src={record.DuongDan} alt={record.TenAnh} style={{ width: 100, height: 100, objectFit: 'cover' }} />
+      )
     },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
+    { title: 'Mô Tả', dataIndex: 'MoTa', key: 'MoTa' },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -44,7 +44,7 @@ export default function AnhPage() {
         <Space size="middle">
           <Button type="primary" onClick={() => handleEdit(record)}>Sửa</Button>
           <Popconfirm
-            title="Bạn có chắc chắn muốn xóa mục này?"
+            title="Bạn có chắc chắn muốn xóa ảnh này?"
             onConfirm={() => message.info(`Bạn đã click Xóa ảnh ${record.MaAnh}`)}
             okText="Có"
             cancelText="Không"
@@ -92,47 +92,51 @@ export default function AnhPage() {
   return (
     <div className="admin-content-page">
       <div className="page-header">
-        <h2 className="page-title">Quản lý Ảnh</h2>
+        <h1 className="page-title">Quản lý Ảnh</h1>
         <Button type="primary" onClick={handleAdd}>Thêm Ảnh Mới</Button>
       </div>
       <Table dataSource={data} columns={columns} rowKey="ID" pagination={false} />
 
       <Modal
-        title={editingItem ? "Sửa Ảnh" : "Thêm Ảnh"}
+        title={editingItem ? "Sửa Ảnh" : "Thêm Ảnh Mới"}
         visible={isModalVisible}
         onCancel={handleCancel}
         footer={null}
+        width={800}
       >
         <Form
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
         >
           <Form.Item
             name="MaAnh"
             label="Mã Ảnh"
             rules={[{ required: true, message: 'Vui lòng nhập Mã Ảnh!' }]}
           >
-            <Input prefix={<TagOutlined />} placeholder="Mã Ảnh" />
+            <Input prefix={<CameraOutlined />} placeholder="Mã Ảnh" />
           </Form.Item>
           <Form.Item
-            name="url"
-            label="URL Ảnh"
-            rules={[{ required: true, message: 'Vui lòng nhập URL Ảnh!' }, { type: 'url', message: 'URL không hợp lệ!' }]}
+            name="TenAnh"
+            label="Tên Ảnh"
+            rules={[{ required: true, message: 'Vui lòng nhập Tên Ảnh!' }]}
           >
-            <Input prefix={<LinkOutlined />} placeholder="URL Ảnh" />
+            <Input placeholder="Tên Ảnh" />
           </Form.Item>
           <Form.Item
-            name="TrangThai"
-            label="Trạng Thái"
-            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
+            name="DuongDan"
+            label="Đường Dẫn Ảnh"
+            rules={[{ required: true, message: 'Vui lòng nhập Đường Dẫn Ảnh!' }]}
           >
-            <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Không hoạt động">Không hoạt động</Option>
-            </Select>
+            <Input placeholder="Đường Dẫn Ảnh" />
           </Form.Item>
+          <Form.Item
+            name="MoTa"
+            label="Mô Tả"
+          >
+            <Input.TextArea placeholder="Mô Tả" />
+          </Form.Item>
+
           <Form.Item>
             <Button type="primary" htmlType="submit">
               {editingItem ? "Cập Nhật" : "Thêm Mới"}

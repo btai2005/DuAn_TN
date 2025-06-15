@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
 import { Menu, Layout } from 'antd';
-import { PartitionOutlined, BorderOutlined, BgColorsOutlined, GlobalOutlined, DeploymentUnitOutlined, TagsOutlined } from '@ant-design/icons';
+import { PartitionOutlined, BorderOutlined, BgColorsOutlined, GlobalOutlined, DeploymentUnitOutlined, TagsOutlined, CameraOutlined } from '@ant-design/icons';
 
 import KichThuocPage from './KichThuocPage';
 import MauSacPage from './MauSacPage';
@@ -9,6 +9,7 @@ import XuatXuPage from './XuatXuPage';
 import ChatLieuPage from './ChatLieuPage';
 import ThuongHieuPage from './ThuongHieuPage';
 import DanhMucPage from './DanhMucPage';
+import AnhPage from './AnhPage';
 
 const { Content } = Layout;
 
@@ -46,9 +47,15 @@ function ThuocTinhPage() {
       icon: <PartitionOutlined />,
       label: <Link to="/admin-panel/attributes/danhmuc">Danh Mục</Link>,
     },
+    {
+      key: 'anh',
+      icon: <CameraOutlined />,
+      label: <Link to="/admin-panel/attributes/anh">Ảnh</Link>,
+    },
   ];
 
-  const getSelectedKey = () => {
+  // Lấy phần cuối của đường dẫn để xác định menu item đang active
+  const getActiveKey = () => {
     const pathParts = location.pathname.split('/');
     const lastPart = pathParts[pathParts.length - 1];
     // Handle the case where the path ends with /admin-panel/attributes
@@ -65,7 +72,7 @@ function ThuocTinhPage() {
         <h1 className="page-title">Quản lý Thuộc Tính Sản Phẩm</h1>
         <Menu
           mode="horizontal"
-          selectedKeys={[getSelectedKey()]}
+          selectedKeys={[getActiveKey()]}
           items={subMenuItems}
           style={{ borderBottom: 'none' }}
         />
@@ -78,6 +85,7 @@ function ThuocTinhPage() {
           <Route path="chatlieu" element={<ChatLieuPage />} />
           <Route path="thuonghieu" element={<ThuongHieuPage />} />
           <Route path="danhmuc" element={<DanhMucPage />} />
+          <Route path="anh" element={<AnhPage />} />
           {/* Default to KichThuocPage if no sub-path is specified */}
           <Route index element={<KichThuocPage />} />
         </Routes>

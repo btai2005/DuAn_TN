@@ -1,33 +1,28 @@
 import React, { useState } from 'react';
-import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Layout, Menu, Typography, Button } from 'antd';
+import { Layout, Menu, Button, theme } from 'antd';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
   ShoppingOutlined,
   TagsOutlined,
   GiftOutlined,
-  UserOutlined,
   TeamOutlined,
   CustomerServiceOutlined,
   CameraOutlined,
   ShoppingCartOutlined,
-  EnvironmentOutlined,
-  MenuFoldOutlined,
-  MenuUnfoldOutlined,
 } from '@ant-design/icons';
-import '../styles/AdminPanel.css';
+import SanPhamPage from './SanPhamPage';
 import NhanVienPage from './NhanVienPage';
 import VoucherPage from './VoucherPage';
-import SanPhamPage from './SanPhamPage';
 import KhachHangPage from './KhachHangPage';
 import ThuocTinhPage from './ThuocTinhPage';
 import AnhPage from './AnhPage';
 import DonHangPage from './DonHangPage';
 import KhuyenMaiPage from './KhuyenMaiPage';
-import GioHangChiTietPage from './GioHangChiTietPage';
-import DonHangChiTietPage from './DonHangChiTietPage';
+import '../styles/AdminPanel.css';
 
 const { Header, Sider, Content } = Layout;
-const { Title } = Typography;
 
 function AdminPanel() {
   const [collapsed, setCollapsed] = useState(false);
@@ -72,46 +67,38 @@ function AdminPanel() {
       onClick: () => navigate('/admin-panel/customers'),
     },
     {
-      key: 'images',
-      icon: <CameraOutlined />,
-      label: 'Ảnh',
-      onClick: () => navigate('/admin-panel/images'),
-    },
-    {
       key: 'orders',
       icon: <ShoppingCartOutlined />,
       label: 'Đơn Hàng',
       onClick: () => navigate('/admin-panel/orders'),
     },
-    {
-      key: 'order-details',
-      icon: <ShoppingCartOutlined />,
-      label: 'Chi Tiết Đơn Hàng',
-      onClick: () => navigate('/admin-panel/order-details'),
-    },
-    {
-      key: 'cart-details',
-      icon: <ShoppingCartOutlined />,
-      label: 'Chi Tiết Giỏ Hàng',
-      onClick: () => navigate('/admin-panel/cart-details'),
-    },
   ];
+
+  const getSelectedKey = () => {
+    const pathParts = location.pathname.split('/');
+    const lastPart = pathParts[pathParts.length - 1];
+    // Nếu đường dẫn là /admin-panel, đặt mặc định là products
+    if (lastPart === 'admin-panel') {
+      return 'products';
+    }
+    return lastPart;
+  };
+
+  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} width={250}>
-        <div style={{ height: 64, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#001529', color: '#fff', fontSize: '20px', fontWeight: 'bold' }}>
-          {collapsed ? 'ADM' : 'Admin Panel'}
-        </div>
+      <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
+        <div className="logo" >Admin Panel</div>
         <Menu
           theme="dark"
-          selectedKeys={[location.pathname.split('/')[2] || 'products']}
           mode="inline"
+          selectedKeys={[getSelectedKey()]}
           items={menuItems}
         />
       </Sider>
-      <Layout>
-        <Header style={{ padding: 0, background: '#fff', display: 'flex', alignItems: 'center', paddingLeft: 24, boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)' }}>
+      <Layout className="site-layout">
+        <Header style={{ padding: 0, background: colorBgContainer, display: 'flex', alignItems: 'center' }}>
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -122,7 +109,7 @@ function AdminPanel() {
               height: 64,
             }}
           />
-          <Title level={3} style={{ margin: 0, marginLeft: 16 }}>Bảng điều khiển quản trị</Title>
+          <h2 style={{ margin: 0, marginLeft: 16 }}>Bảng điều khiển quản trị</h2>
         </Header>
         <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)' }}>
           <Routes>
@@ -132,11 +119,8 @@ function AdminPanel() {
             <Route path="vouchers" element={<VoucherPage />} />
             <Route path="customers" element={<KhachHangPage />} />
             <Route path="attributes/*" element={<ThuocTinhPage />} />
-            <Route path="images" element={<AnhPage />} />
             <Route path="orders" element={<DonHangPage />} />
-            <Route path="order-details" element={<DonHangChiTietPage />} />
             <Route path="promotions" element={<KhuyenMaiPage />} />
-            <Route path="cart-details" element={<GioHangChiTietPage />} />
           </Routes>
         </Content>
       </Layout>
