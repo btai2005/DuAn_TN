@@ -11,6 +11,7 @@ import {
   CustomerServiceOutlined,
   CameraOutlined,
   ShoppingCartOutlined,
+  BarChartOutlined,
 } from '@ant-design/icons';
 import SanPhamPage from './SanPhamPage';
 import NhanVienPage from './NhanVienPage';
@@ -20,6 +21,7 @@ import ThuocTinhPage from './ThuocTinhPage';
 import AnhPage from './AnhPage';
 import DonHangPage from './DonHangPage';
 import KhuyenMaiPage from './KhuyenMaiPage';
+import StatisticsPage from './StatisticsPage';
 import '../styles/AdminPanel.css';
 
 const { Header, Sider, Content } = Layout;
@@ -72,6 +74,12 @@ function AdminPanel() {
       label: 'Đơn Hàng',
       onClick: () => navigate('/admin-panel/orders'),
     },
+    {
+      key: 'statistics',
+      icon: <BarChartOutlined />,
+      label: 'Thống Kê',
+      onClick: () => navigate('/admin-panel/statistics'),
+    },
   ];
 
   const getSelectedKey = () => {
@@ -121,6 +129,7 @@ function AdminPanel() {
             <Route path="attributes/*" element={<ThuocTinhPage />} />
             <Route path="orders" element={<DonHangPage />} />
             <Route path="promotions" element={<KhuyenMaiPage />} />
+            <Route path="statistics" element={<StatisticsPage />} />
           </Routes>
         </Content>
       </Layout>

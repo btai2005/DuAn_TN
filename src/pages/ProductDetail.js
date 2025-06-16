@@ -11,7 +11,8 @@ const product = {
   price: 2000000,
   img: 'https://via.placeholder.com/400x300?text=Chi+Tiet+Giay+Nike',
   description: 'Giày Nike Air Max với thiết kế hiện đại, êm ái, phù hợp cho mọi hoạt động thể thao và đi chơi.',
-  sizes: [38, 39, 40, 41, 42]
+  sizes: [38, 39, 40, 41, 42],
+  colors: ['Đen', 'Trắng', 'Đỏ', 'Xanh']
 };
 
 function ProductDetail() {
@@ -26,6 +27,12 @@ function ProductDetail() {
           <Title level={4} type="danger">Giá: {product.price.toLocaleString()}đ</Title>
           <Paragraph>{product.description}</Paragraph>
           <div style={{ margin: '16px 0' }}>
+            <span>Chọn màu: </span>
+            <Select placeholder="Màu sắc" style={{ width: 120, marginRight: 16 }}>
+              {product.colors.map(color => (
+                <Option value={color} key={color}>{color}</Option>
+              ))}
+            </Select>
             <span>Chọn size: </span>
             <Select placeholder="Size" style={{ width: 100, marginRight: 16 }}>
               {product.sizes.map(size => (
