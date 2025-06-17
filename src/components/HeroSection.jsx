@@ -7,7 +7,7 @@ const { Title, Paragraph } = Typography;
 const heroSlides = [
   {
     id: 1,
-    image: '/banners/banner1.jpg',
+    image: 'banner1.jpg',
     title: 'Bộ Sưu Tập Mới',
     description: 'Khám phá ngay những mẫu giày mới nhất',
     buttonText: 'Mua ngay',
@@ -15,7 +15,7 @@ const heroSlides = [
   },
   {
     id: 2,
-    image: '/banners/banner2.jpg',
+    image: 'banner2.jpg',
     title: 'Siêu Sale Tháng 4',
     description: 'Giảm giá lên đến 50% cho tất cả sản phẩm',
     buttonText: 'Xem ngay',
@@ -23,7 +23,7 @@ const heroSlides = [
   },
   {
     id: 3,
-    image: '/banners/banner3.jpg',
+    image: 'banner3.jpg',
     title: 'Giày Thể Thao Cao Cấp',
     description: 'Chất lượng vượt trội, phong cách độc đáo',
     buttonText: 'Khám phá',

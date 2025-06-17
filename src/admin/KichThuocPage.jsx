@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
-import { BorderOutlined, TagOutlined } from '@ant-design/icons';
+import { TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
 
 const { Option } = Select;
@@ -10,7 +10,7 @@ export default function KichThuocPage() {
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
 
-  const [data, setData] = useState([
+  const [data] = useState([
     {
       ID: '1',
       MaKichThuoc: 'KT001',

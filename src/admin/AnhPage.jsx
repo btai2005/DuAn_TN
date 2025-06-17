@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Space, message, Popconfirm, Upload } from 'antd';
-import { CameraOutlined, UploadOutlined } from '@ant-design/icons';
+import { Table, Button, Modal, Form, Input, Space, message, Popconfirm } from 'antd';
+import { CameraOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
 
 export default function AnhPage() {
@@ -9,7 +9,7 @@ export default function AnhPage() {
   const [form] = Form.useForm();
 
   // Dữ liệu giả định cho ảnh
-  const [data, setData] = useState([
+  const [data] = useState([
     {
       ID: '1',
       MaAnh: 'A001',

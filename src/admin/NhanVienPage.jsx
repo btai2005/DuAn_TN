@@ -12,7 +12,7 @@ export default function NhanVienPage() {
   const [form] = Form.useForm();
 
   // Dữ liệu giả định cho nhân viên
-  const [employees, setEmployees] = useState([
+  const [employees] = useState([
     {
       ID: '1',
       MaNhanVien: 'NV001',

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Select, Space, message, Popconfirm } from 'antd';
-import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined, KeyOutlined, CalendarOutlined, QuestionCircleOutlined, BellOutlined, ClockCircleOutlined } from '@ant-design/icons';
+import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined, KeyOutlined, CalendarOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import '../styles/AdminPanel.css'; // Import the CSS file
 
@@ -12,7 +12,7 @@ export default function KhachHangPage() {
   const [form] = Form.useForm();
 
   // Dữ liệu giả định cho khách hàng
-  const [customers, setCustomers] = useState([
+  const [customers] = useState([
     {
       ID: '1',
       MaKhachHang: 'KH001',

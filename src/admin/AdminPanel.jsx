@@ -9,7 +9,6 @@ import {
   GiftOutlined,
   TeamOutlined,
   CustomerServiceOutlined,
-  CameraOutlined,
   ShoppingCartOutlined,
   BarChartOutlined,
 } from '@ant-design/icons';
@@ -18,7 +17,6 @@ import NhanVienPage from './NhanVienPage';
 import VoucherPage from './VoucherPage';
 import KhachHangPage from './KhachHangPage';
 import ThuocTinhPage from './ThuocTinhPage';
-import AnhPage from './AnhPage';
 import DonHangPage from './DonHangPage';
 import KhuyenMaiPage from './KhuyenMaiPage';
 import StatisticsPage from './StatisticsPage';
@@ -92,7 +90,7 @@ function AdminPanel() {
     return lastPart;
   };
 
-  const { token: { colorBgContainer, borderRadiusLG } } = theme.useToken();
+  const { token: { colorBgContainer } } = theme.useToken();
 
   return (
     <Layout style={{ minHeight: '100vh' }}>

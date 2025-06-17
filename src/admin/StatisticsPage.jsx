@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Card, Statistic, Row, Col, Typography, Space, Divider, Select } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined, ShoppingCartOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
-import moment from 'moment';
+import { ShoppingCartOutlined, DollarOutlined, UserOutlined } from '@ant-design/icons';
 
 const { Title } = Typography;
 const { Option } = Select;

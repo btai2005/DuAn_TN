@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout, Menu, Input, Button, Badge, Space, Avatar, Dropdown } from 'antd';
+import { Layout, Menu, Input, Button, Badge, Space, Dropdown } from 'antd';
 import { Link, useLocation } from 'react-router-dom';
 import { SearchOutlined, ShoppingCartOutlined, UserOutlined, HeartOutlined } from '@ant-design/icons';
 
@@ -39,30 +39,30 @@ function Header() {
   const selectedKey = menuItems.find(item => location.pathname.startsWith('/' + item.key))?.key || 'home';
 
   return (
-    <AntHeader style={{ 
-      background: '#ECEFF1',
-      padding: '0 15px',
-      boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+    <AntHeader style={{
+      background: '#f5f5f5',
+      padding: '0 30px',
+      boxShadow: '0 2px 8px rgba(121, 106, 193, 0.96)',
       position: 'sticky',
       top: 0,
       zIndex: 1000,
-      height: '48px',
-      lineHeight: '48px',
+      height: '100px',
+      lineHeight: '100px',
       display: 'flex',
       alignItems: 'center',
     }}>
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
         justifyContent: 'space-between',
         width: '100%',
       }}>
         {/* Logo */}
         <Link to="/home" style={{ marginRight: '10px' }}>
-          <img 
-            src="/logo.png" 
-            alt="Logo" 
-            style={{ height: '24px' }}
+          <img
+            src="/logo.png"
+            alt="Logo"
+            style={{ height: '100px' }}
           />
         </Link>
 
@@ -71,35 +71,35 @@ function Header() {
           mode="horizontal"
           selectedKeys={[selectedKey]}
           items={menuItems}
-          style={{ 
+          style={{
             flex: 1,
             borderBottom: 'none',
-            fontSize: '13px',
+            fontSize: '16px',
             fontWeight: '500',
             backgroundColor: 'transparent',
             height: '100%',
-            lineHeight: '48px',
+            lineHeight: '100px',
           }}
         />
 
         {/* Phần tìm kiếm và giỏ hàng */}
-        <Space size="small" style={{ alignItems: 'center', marginLeft: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', height: '100%', gap: '10px' }}>
           <Search
             placeholder="Tìm kiếm sản phẩm..."
-            style={{ width: 150 }}
-            enterButton={<SearchOutlined style={{ fontSize: '14px' }} />}
-            size="small"
+            style={{ width: 250 }}
+            enterButton={<SearchOutlined style={{ fontSize: '28px' }} />}
+            size="large"
           />
-          
+
           <Link to="/wishlist">
             <Badge count={5}>
-              <Button type="text" icon={<HeartOutlined style={{ fontSize: '18px' }} />} size="small" />
+              <Button type="text" icon={<HeartOutlined style={{ fontSize: '28px' }} />} size="large" />
             </Badge>
           </Link>
 
           <Link to="/cart">
             <Badge count={3}>
-              <Button type="text" icon={<ShoppingCartOutlined style={{ fontSize: '18px' }} />} size="small" />
+              <Button type="text" icon={<ShoppingCartOutlined style={{ fontSize: '28px' }} />} size="large" />
             </Badge>
           </Link>
 
@@ -108,12 +108,12 @@ function Header() {
             placement="bottomRight"
             arrow
           >
-            <Button type="text" icon={<UserOutlined style={{ fontSize: '18px' }} />} size="small" />
+            <Button type="text" icon={<UserOutlined style={{ fontSize: '28px' }} />} size="large" />
           </Dropdown>
-        </Space>
+        </div>
       </div>
     </AntHeader>
   );
 }
 
-export default Header; 
+export default Header;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Select, Space, message, Popconfirm } from 'antd';
-import { GiftOutlined, TagOutlined } from '@ant-design/icons';
+import { TagOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import '../styles/AdminPanel.css';
 
@@ -11,7 +11,7 @@ export default function KhuyenMaiPage() {
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
 
-  const [data, setData] = useState([
+  const [data] = useState([
     {
       ID: '1',
       MaKhuyenMai: 'KM001',

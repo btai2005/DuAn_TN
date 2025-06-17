@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Select, Space, message, Popconfirm, Typography } from 'antd';
-import { ShoppingCartOutlined, UserOutlined, TagOutlined, HomeOutlined, EuroOutlined, NotificationOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
+import { UserOutlined, TagOutlined, HomeOutlined, EuroOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
 import moment from 'moment';
 import '../styles/AdminPanel.css';
 
@@ -19,21 +19,21 @@ export default function DonHangPage() {
   const [detailModalTitle, setDetailModalTitle] = useState('');
 
   // Dữ liệu giả định cho các dropdown (khóa ngoại) của Đơn Hàng
-  const [nhanVienData, setNhanVienData] = useState([
+  const [nhanVienData] = useState([
     { id: 'NV001', name: 'Nguyễn Văn A' },
     { id: 'NV002', name: 'Trần Thị B' },
   ]);
-  const [khachHangData, setKhachHangData] = useState([
+  const [khachHangData] = useState([
     { id: 'KH001', name: 'Nguyễn Văn C' },
     { id: 'KH002', name: 'Lê Thị D' },
   ]);
-  const [voucherData, setVoucherData] = useState([
+  const [voucherData] = useState([
     { id: 'VC001', name: 'Giảm 10K' },
     { id: 'VC002', name: 'Miễn phí vận chuyển' },
   ]);
 
   // Dữ liệu giả định cho đơn hàng
-  const [orderData, setOrderData] = useState([
+  const [orderData] = useState([
     {
       ID: '1',
       MaDonHang: 'DH001',
@@ -78,7 +78,7 @@ export default function DonHangPage() {
   ]);
 
   // Dữ liệu giả định cho các dropdown của Chi Tiết Đơn Hàng
-  const [sanPhamChiTietData, setSanPhamChiTietData] = useState([
+  const [sanPhamChiTietData] = useState([
     { id: 'CT001', name: 'SP chi tiết CT001 (Áo thun Nike - S - Đỏ)' },
     { id: 'CT002', name: 'SP chi tiết CT002 (Áo thun Nike - M - Xanh)' },
     { id: 'CT003', name: 'SP chi tiết CT003 (Quần jean Adidas - S - Xanh)' },

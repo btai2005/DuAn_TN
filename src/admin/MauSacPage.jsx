@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
-import { BgColorsOutlined, TagOutlined } from '@ant-design/icons';
+import { TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
 import useMauSacStore from './stores/mauSacStore';
 

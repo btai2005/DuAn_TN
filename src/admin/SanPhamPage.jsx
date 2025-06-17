@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm, Upload } from 'antd';
-import { ShoppingOutlined, TagOutlined, UploadOutlined, PlusOutlined } from '@ant-design/icons';
+import { ShoppingOutlined, TagOutlined, UploadOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
 import useMauSacStore from './stores/mauSacStore';
 
@@ -16,24 +16,24 @@ export default function SanPhamPage() {
   const [addMauSacForm] = Form.useForm();
 
   // Dữ liệu giả định cho các dropdown (khóa ngoại)
-  const [thuongHieuData, setThuongHieuData] = useState([
+  const [thuongHieuData] = useState([
     { id: 'TH001', name: 'Nike' },
     { id: 'TH002', name: 'Adidas' },
     { id: 'TH003', name: 'Puma' },
   ]);
-  const [xuatXuData, setXuatXuData] = useState([
+  const [xuatXuData] = useState([
     { id: 'XX001', name: 'Việt Nam' },
     { id: 'XX002', name: 'Trung Quốc' },
   ]);
-  const [danhMucData, setDanhMucData] = useState([
+  const [danhMucData] = useState([
     { id: 'DM001', name: 'Áo' },
     { id: 'DM002', name: 'Quần' },
   ]);
-  const [khuyenMaiData, setKhuyenMaiData] = useState([
+  const [khuyenMaiData] = useState([
     { id: 'KM001', name: 'Giảm 10%' },
     { id: 'KM002', name: 'Freeship' },
   ]);
-  const [kichThuocData, setKichThuocData] = useState([
+  const [kichThuocData] = useState([
     { id: 'KT001', name: 'S' },
     { id: 'KT002', name: 'M' },
   ]);
@@ -42,7 +42,7 @@ export default function SanPhamPage() {
   const { mauSacData, addMauSac } = useMauSacStore();
 
   // Dữ liệu giả định cho sản phẩm
-  const [data, setData] = useState([
+  const [data] = useState([
     {
       ID: '1',
       MaSanPham: 'SP001',
