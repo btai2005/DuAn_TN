@@ -9,7 +9,6 @@ import XuatXuPage from './XuatXuPage';
 import ChatLieuPage from './ChatLieuPage';
 import ThuongHieuPage from './ThuongHieuPage';
 import DanhMucPage from './DanhMucPage';
-import AnhPage from './AnhPage';
 
 const { Content } = Layout;
 
@@ -47,11 +46,6 @@ function ThuocTinhPage() {
       icon: <PartitionOutlined />,
       label: <Link to="/admin-panel/attributes/danhmuc">Danh Mục</Link>,
     },
-    {
-      key: 'anh',
-      icon: <CameraOutlined />,
-      label: <Link to="/admin-panel/attributes/anh">Ảnh</Link>,
-    },
   ];
 
   // Lấy phần cuối của đường dẫn để xác định menu item đang active
@@ -85,7 +79,6 @@ function ThuocTinhPage() {
           <Route path="chatlieu" element={<ChatLieuPage />} />
           <Route path="thuonghieu" element={<ThuongHieuPage />} />
           <Route path="danhmuc" element={<DanhMucPage />} />
-          <Route path="anh" element={<AnhPage />} />
           {/* Default to KichThuocPage if no sub-path is specified */}
           <Route index element={<KichThuocPage />} />
         </Routes>

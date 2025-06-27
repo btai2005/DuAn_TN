@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
 import { TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
@@ -9,32 +9,18 @@ export default function DanhMucPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
-
-  const [data] = useState([
-    {
-      ID: '1',
-      MaDanhMuc: 'DM001',
-      Ten: 'Áo',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '2',
-      MaDanhMuc: 'DM002',
-      Ten: 'Quần',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '3',
-      MaDanhMuc: 'DM003',
-      Ten: 'Giày',
-      TrangThai: 'Đang hoạt động',
-    },
-  ]);
+  const [danhMucs, setDanhMucs] = useState([]);
+  useEffect(() => {
+    fetch('http://localhost:8080/api/danh-muc/getAll')
+      .then(response => response.json())
+      .then(data => setDanhMucs(data))
+      .catch(error => console.error('Lỗi khi gọi API kích thước:', error));
+  }, []);
 
   const columns = [
-    { title: 'Mã Danh Mục', dataIndex: 'MaDanhMuc', key: 'MaDanhMuc' },
-    { title: 'Tên Danh Mục', dataIndex: 'Ten', key: 'Ten' },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Tên Danh Mục', dataIndex: 'tenDanhMuc', key: 'tenDanhMuc' },
+    { title: 'Trạng Thái', dataIndex: 'trangThai', key: 'trangThai' },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -74,15 +60,61 @@ export default function DanhMucPage() {
     setEditingItem(item);
     form.setFieldsValue({
       ...item,
+      tenDanhMuc: item.tenDanhMuc
     });
     showModal();
   };
 
   const onFinish = (values) => {
     if (editingItem) {
-      message.success('Cập nhật thành công (chỉ giao diện)!');
+      // Cập nhật
+      fetch(`http://localhost:8080/api/danh-muc/update/${editingItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingItem.id,
+          tenDanhMuc: values.tenDanhMuc,
+          trangThai: Number(values.trangThai)
+        }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Cập nhật thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Cập nhật thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/danh-muc/getAll')
+            .then(res => res.json())
+            .then(data => setDanhMucs(data));
+        })
+        .catch(error => {
+          message.error('Cập nhật thất bại!');
+          console.error(error);
+        });
     } else {
-      message.success('Thêm mới thành công (chỉ giao diện)!');
+      // Thêm mới
+      fetch('http://localhost:8080/api/danh-muc/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenDanhMuc: values.tenDanhMuc,
+          trangThai: Number(values.trangThai)
+        }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Thêm mới thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/danh-muc/getAll')
+            .then(res => res.json())
+            .then(data => setDanhMucs(data));
+        })
+        .catch(error => {
+          message.error('Thêm mới thất bại!');
+          console.error(error);
+        });
     }
     handleCancel();
   };
@@ -93,7 +125,7 @@ export default function DanhMucPage() {
         <h2 className="page-title">Quản lý Danh Mục</h2>
         <Button type="primary" onClick={handleAdd}>Thêm Danh Mục Mới</Button>
       </div>
-      <Table dataSource={data} columns={columns} rowKey="ID" pagination={false} />
+      <Table dataSource={danhMucs} columns={columns} rowKey="id" pagination={false} />
 
       <Modal
         title={editingItem ? "Sửa Danh Mục" : "Thêm Danh Mục"}
@@ -105,30 +137,28 @@ export default function DanhMucPage() {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
+          initialValues={{ trangThai: 1 }}
         >
+          {editingItem && (
+            <Form.Item name="id" label="ID">
+              <Input disabled />
+            </Form.Item>
+          )}
           <Form.Item
-            name="MaDanhMuc"
-            label="Mã Danh Mục"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Danh Mục!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Mã Danh Mục" />
-          </Form.Item>
-          <Form.Item
-            name="Ten"
+            name="tenDanhMuc"
             label="Tên Danh Mục"
             rules={[{ required: true, message: 'Vui lòng nhập Tên Danh Mục!' }]}
           >
             <Input prefix={<TagOutlined />} placeholder="Tên Danh Mục" />
           </Form.Item>
           <Form.Item
-            name="TrangThai"
+            name="trangThai"
             label="Trạng Thái"
             rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
           >
             <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Không hoạt động">Không hoạt động</Option>
+              <Option value={1}>Đang hoạt động</Option>
+              <Option value={0}>Không hoạt động</Option>
             </Select>
           </Form.Item>
           <Form.Item>

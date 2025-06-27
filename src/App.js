@@ -11,9 +11,9 @@ import OrderHistory from './pages/OrderHistory';
 import AdminDashboard from './admin/AdminDashboard';
 import MainLayout from './layouts/MainLayout';
 import AdminPanel from './admin/AdminPanel';
-import SalePage from './pages/SalePage';
 import BlogPage from './pages/BlogPage';
 import ContactPage from './pages/ContactPage';
+import Wishlist from './pages/Wishlist';
 import './styles/App.css';
 
 function App() {
@@ -30,10 +30,10 @@ function App() {
           <Route path="/cart" element={<Cart />} />
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<OrderHistory />} />
-          <Route path="/sale" element={<SalePage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/wishlist" element={<Wishlist />} />
         </Route>
         <Route path="/admin-panel/*" element={<AdminPanel />} />
       </Routes>

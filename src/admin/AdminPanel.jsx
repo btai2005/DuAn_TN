@@ -18,8 +18,8 @@ import VoucherPage from './VoucherPage';
 import KhachHangPage from './KhachHangPage';
 import ThuocTinhPage from './ThuocTinhPage';
 import DonHangPage from './DonHangPage';
-import KhuyenMaiPage from './KhuyenMaiPage';
 import StatisticsPage from './StatisticsPage';
+import BanHangTaiQuayPage from './BanHangTaiQuayPage';
 import '../styles/AdminPanel.css';
 
 const { Header, Sider, Content } = Layout;
@@ -78,6 +78,12 @@ function AdminPanel() {
       label: 'Thống Kê',
       onClick: () => navigate('/admin-panel/statistics'),
     },
+    {
+      key: 'banhang',
+      icon: <ShoppingCartOutlined />,
+      label: 'Bán hàng tại quầy',
+      onClick: () => navigate('/admin-panel/banhang'),
+    },
   ];
 
   const getSelectedKey = () => {
@@ -93,8 +99,22 @@ function AdminPanel() {
   const { token: { colorBgContainer } } = theme.useToken();
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider trigger={null} collapsible collapsed={collapsed} theme="dark">
+    <Layout>
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        theme="dark"
+        style={{
+          position: 'fixed',
+          left: 0,
+          top: 0,
+          height: '100vh',
+          zIndex: 100,
+          overflow: 'auto',
+        }}
+        width={200}
+      >
         <div className="logo" >Admin Panel</div>
         <Menu
           theme="dark"
@@ -103,8 +123,8 @@ function AdminPanel() {
           items={menuItems}
         />
       </Sider>
-      <Layout className="site-layout">
-        <Header style={{ padding: 0, background: colorBgContainer, display: 'flex', alignItems: 'center' }}>
+      <Layout className="site-layout" style={{ marginLeft: collapsed ? 80 : 200, transition: 'margin-left 0.2s' }}>
+        <Header style={{ padding: 0, background: colorBgContainer, display: 'flex', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
           <Button
             type="text"
             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
@@ -117,7 +137,7 @@ function AdminPanel() {
           />
           <h2 style={{ margin: 0, marginLeft: 16 }}>Bảng điều khiển quản trị</h2>
         </Header>
-        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)' }}>
+        <Content style={{ margin: '24px 16px', padding: 24, background: '#fff', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0, 0, 0, 0.05)', minHeight: '100vh', overflow: 'auto' }}>
           <Routes>
             <Route index element={<SanPhamPage />} />
             <Route path="products" element={<SanPhamPage />} />
@@ -126,8 +146,8 @@ function AdminPanel() {
             <Route path="customers" element={<KhachHangPage />} />
             <Route path="attributes/*" element={<ThuocTinhPage />} />
             <Route path="orders" element={<DonHangPage />} />
-            <Route path="promotions" element={<KhuyenMaiPage />} />
             <Route path="statistics" element={<StatisticsPage />} />
+            <Route path="banhang" element={<BanHangTaiQuayPage />} />
           </Routes>
         </Content>
       </Layout>

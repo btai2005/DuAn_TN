@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
 import { GlobalOutlined, TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
@@ -9,32 +9,30 @@ export default function XuatXuPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
+  const [kichThuocs, setKichThuocs] = useState([]);
+  const [xuatXus, setXuatXus] = useState([]);
 
-  const [data, setData] = useState([
-    {
-      ID: '1',
-      MaXuatXu: 'XX001',
-      TenXuatXu: 'Việt Nam',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '2',
-      MaXuatXu: 'XX002',
-      TenXuatXu: 'Trung Quốc',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '3',
-      MaXuatXu: 'XX003',
-      TenXuatXu: 'Thái Lan',
-      TrangThai: 'Đang hoạt động',
-    },
-  ]);
+  useEffect(() => {
+    fetch('http://localhost:8080/api/kich-thuoc/getAll')
+      .then(response => response.json())
+      .then(data => {
+        console.log('DATA KICH THUOC:', data);
+        setKichThuocs(data);
+      })
+      .catch(error => console.error('Lỗi khi gọi API kích thước:', error));
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/xuat-xu/getAll')
+      .then(response => response.json())
+      .then(data => setXuatXus(data))
+      .catch(error => console.error('Lỗi khi gọi API kích thước:', error));
+  }, []);
 
   const columns = [
-    { title: 'Mã Xuất Xứ', dataIndex: 'MaXuatXu', key: 'MaXuatXu' },
-    { title: 'Tên Xuất Xứ', dataIndex: 'TenXuatXu', key: 'TenXuatXu' },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Tên Xuất Xứ', dataIndex: 'tenXuatXu', key: 'tenXuatXu' },
+    { title: 'Trạng Thái', dataIndex: 'trangThai', key: 'trangThai' },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -74,15 +72,61 @@ export default function XuatXuPage() {
     setEditingItem(item);
     form.setFieldsValue({
       ...item,
+      tenXuatXu: item.tenXuatXu
     });
     showModal();
   };
 
   const onFinish = (values) => {
     if (editingItem) {
-      message.success('Cập nhật thành công (chỉ giao diện)!');
+      // Cập nhật
+      fetch(`http://localhost:8080/api/xuat-xu/update/${editingItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingItem.id,
+          tenXuatXu: values.tenXuatXu,
+          trangThai: Number(values.trangThai)
+        }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Cập nhật thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Cập nhật thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/xuat-xu/getAll')
+            .then(res => res.json())
+            .then(data => setXuatXus(data));
+        })
+        .catch(error => {
+          message.error('Cập nhật thất bại!');
+          console.error(error);
+        });
     } else {
-      message.success('Thêm mới thành công (chỉ giao diện)!');
+      // Thêm mới
+      fetch('http://localhost:8080/api/xuat-xu/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenXuatXu: values.tenXuatXu,
+          trangThai: Number(values.trangThai)
+        }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Thêm mới thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/xuat-xu/getAll')
+            .then(res => res.json())
+            .then(data => setXuatXus(data));
+        })
+        .catch(error => {
+          message.error('Thêm mới thất bại!');
+          console.error(error);
+        });
     }
     handleCancel();
   };
@@ -93,7 +137,7 @@ export default function XuatXuPage() {
         <h2 className="page-title">Quản lý Xuất Xứ</h2>
         <Button type="primary" onClick={handleAdd}>Thêm Xuất Xứ Mới</Button>
       </div>
-      <Table dataSource={data} columns={columns} rowKey="ID" pagination={false} />
+      <Table dataSource={xuatXus} columns={columns} rowKey="id" pagination={false} />
 
       <Modal
         title={editingItem ? "Sửa Xuất Xứ" : "Thêm Xuất Xứ"}
@@ -105,30 +149,28 @@ export default function XuatXuPage() {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
+          initialValues={{ trangThai: 1 }}
         >
+          {editingItem && (
+            <Form.Item name="id" label="ID">
+              <Input disabled />
+            </Form.Item>
+          )}
           <Form.Item
-            name="MaXuatXu"
-            label="Mã Xuất Xứ"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Xuất Xứ!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Mã Xuất Xứ" />
-          </Form.Item>
-          <Form.Item
-            name="TenXuatXu"
+            name="tenXuatXu"
             label="Tên Xuất Xứ"
             rules={[{ required: true, message: 'Vui lòng nhập Tên Xuất Xứ!' }]}
           >
             <Input prefix={<TagOutlined />} placeholder="Tên Xuất Xứ" />
           </Form.Item>
           <Form.Item
-            name="TrangThai"
+            name="trangThai"
             label="Trạng Thái"
             rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
           >
             <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Không hoạt động">Không hoạt động</Option>
+              <Option value={1}>Đang hoạt động</Option>
+              <Option value={0}>Không hoạt động</Option>
             </Select>
           </Form.Item>
           <Form.Item>

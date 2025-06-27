@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Select, Space, message, InputNumber, Popconfirm } from 'antd';
 import { TagOutlined, FileTextOutlined, CalendarOutlined, PoundOutlined, NumberOutlined, AlignLeftOutlined } from '@ant-design/icons';
 import moment from 'moment';
@@ -11,51 +11,29 @@ export default function VoucherPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingVoucher, setEditingVoucher] = useState(null);
   const [form] = Form.useForm();
-
+  const [vouchers, setVouchers] = useState([]);
   // Dữ liệu giả định cho voucher
-  const [vouchers, setVouchers] = useState([
-    {
-      ID: '1',
-      MaVoucher: 'VC001',
-      TenVoucher: 'Giảm giá 10% cho đơn hàng đầu tiên',
-      LoaiVoucher: 'Phần trăm',
-      MoTa: 'Áp dụng cho khách hàng mới.',
-      SoLuong: 100,
-      GiaTri: 10,
-      NgayBatDau: '2023-01-01',
-      NgayKetThuc: '2023-12-31',
-      NgayTao: '2022-12-01',
-      TrangThai: 'Đang hoạt động',
-      DonToiThieu: 100000,
-    },
-    {
-      ID: '2',
-      MaVoucher: 'VC002',
-      TenVoucher: 'Giảm giá 50k cho đơn hàng trên 500k',
-      LoaiVoucher: 'Số tiền',
-      MoTa: 'Áp dụng cho mọi đơn hàng.',
-      SoLuong: 50,
-      GiaTri: 50000,
-      NgayBatDau: '2023-03-01',
-      NgayKetThuc: '2023-09-30',
-      NgayTao: '2023-02-15',
-      TrangThai: 'Tạm ngưng',
-      DonToiThieu: 500000,
-    },
-  ]);
+  useEffect(() => {
+    fetch('http://localhost:8080/api/voucher')
+      .then(response => response.json())
+      .then(data => setVouchers(data))
+      .catch(error => console.error('Lỗi khi gọi API kích thước:', error));
+  }, []);
 
   const columns = [
-    { title: 'Mã Voucher', dataIndex: 'MaVoucher', key: 'MaVoucher' },
-    { title: 'Tên Voucher', dataIndex: 'TenVoucher', key: 'TenVoucher' },
-    { title: 'Loại Voucher', dataIndex: 'LoaiVoucher', key: 'LoaiVoucher' },
-    { title: 'Mô Tả', dataIndex: 'MoTa', key: 'MoTa' },
-    { title: 'Số Lượng', dataIndex: 'SoLuong', key: 'SoLuong' },
-    { title: 'Giá Trị', dataIndex: 'GiaTri', key: 'GiaTri' },
-    { title: 'Ngày Bắt Đầu', dataIndex: 'NgayBatDau', key: 'NgayBatDau' },
-    { title: 'Ngày Kết Thúc', dataIndex: 'NgayKetThuc', key: 'NgayKetThuc' },
-    { title: 'Ngày Tạo', dataIndex: 'NgayTao', key: 'NgayTao' },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
-    { title: 'Đơn Tối Thiểu', dataIndex: 'DonToiThieu', key: 'DonToiThieu' },
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Mã Voucher', dataIndex: 'maVoucher', key: 'maVoucher' },
+    { title: 'Tên Voucher', dataIndex: 'tenVoucher', key: 'tenVoucher' },
+    { title: 'Loại Voucher', dataIndex: 'loaiVoucher', key: 'loaiVoucher' },
+    { title: 'Mô Tả', dataIndex: 'moTa', key: 'moTa' },
+    { title: 'Số Lượng', dataIndex: 'soLuong', key: 'soLuong' },
+    { title: 'Giá Trị', dataIndex: 'giaTri', key: 'giaTri' },
+    { title: 'Đơn Tối Thiểu', dataIndex: 'donToiThieu', key: 'donToiThieu' },
+    { title: 'Ngày Bắt Đầu', dataIndex: 'ngayBatDau', key: 'ngayBatDau' },
+    { title: 'Ngày Kết Thúc', dataIndex: 'ngayKetThuc', key: 'ngayKetThuc' },
+    { title: 'Ngày Tạo', dataIndex: 'ngayTao', key: 'ngayTao' },
+    { title: 'Trạng Thái', dataIndex: 'trangThai', key: 'trangThai' },
+    
     {
       title: 'Hành Động',
       key: 'actions',
@@ -95,18 +73,66 @@ export default function VoucherPage() {
     setEditingVoucher(voucher);
     form.setFieldsValue({
       ...voucher,
-      NgayBatDau: voucher.NgayBatDau ? moment(voucher.NgayBatDau) : null,
-      NgayKetThuc: voucher.NgayKetThuc ? moment(voucher.NgayKetThuc) : null,
-      NgayTao: voucher.NgayTao ? moment(voucher.NgayTao) : null,
+      ngayBatDau: voucher.ngayBatDau ? moment(voucher.ngayBatDau) : null,
+      ngayKetThuc: voucher.ngayKetThuc ? moment(voucher.ngayKetThuc) : null,
+      ngayTao: voucher.ngayTao ? moment(voucher.ngayTao) : null,
     });
     showModal();
   };
 
   const onFinish = (values) => {
+    // Đảm bảo đúng định dạng dữ liệu gửi lên
+    const dataSend = {
+      ...values,
+      trangThai: Number(values.trangThai),
+      soLuong: Number(values.soLuong),
+      giaTri: Number(values.giaTri),
+      donToiThieu: Number(values.donToiThieu),
+      ngayBatDau: values.ngayBatDau ? values.ngayBatDau.format('YYYY-MM-DDTHH:mm:ss') : null,
+      ngayKetThuc: values.ngayKetThuc ? values.ngayKetThuc.format('YYYY-MM-DDTHH:mm:ss') : null,
+    };
     if (editingVoucher) {
-      message.success('Cập nhật voucher thành công (chỉ giao diện)!');
+      // Sửa
+      fetch(`http://localhost:8080/api/voucher/update/${editingVoucher.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...dataSend, id: editingVoucher.id }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Cập nhật thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Cập nhật voucher thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/voucher')
+            .then(res => res.json())
+            .then(data => setVouchers(data));
+        })
+        .catch(error => {
+          message.error('Cập nhật thất bại!');
+          console.error(error);
+        });
     } else {
-      message.success('Thêm voucher thành công (chỉ giao diện)!');
+      // Thêm mới
+      fetch('http://localhost:8080/api/voucher/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataSend),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Thêm mới thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Thêm voucher thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/voucher')
+            .then(res => res.json())
+            .then(data => setVouchers(data));
+        })
+        .catch(error => {
+          message.error('Thêm mới thất bại!');
+          console.error(error);
+        });
     }
     handleCancel();
   };
@@ -129,83 +155,91 @@ export default function VoucherPage() {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ LoaiVoucher: 'Phần trăm', TrangThai: 'Đang hoạt động' }}
+          initialValues={{ loaiVoucher: 'Giảm giá %', trangThai: 1 }}
         >
+          {editingVoucher && (
+            <Form.Item name="id" label="ID">
+              <Input disabled />
+            </Form.Item>
+          )}
           <Form.Item
-            name="MaVoucher"
+            name="maVoucher"
             label="Mã Voucher"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Voucher!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Mã Voucher!' }]}
+          >
             <Input prefix={<TagOutlined />} placeholder="Mã Voucher" />
           </Form.Item>
           <Form.Item
-            name="TenVoucher"
+            name="tenVoucher"
             label="Tên Voucher"
-            rules={[{ required: true, message: 'Vui lòng nhập Tên Voucher!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Tên Voucher!' }]}
+          >
             <Input prefix={<TagOutlined />} placeholder="Tên Voucher" />
           </Form.Item>
           <Form.Item
-            name="LoaiVoucher"
+            name="loaiVoucher"
             label="Loại Voucher"
-            rules={[{ required: true, message: 'Vui lòng chọn Loại Voucher!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Loại Voucher!' }]}
+          >
             <Select prefix={<TagOutlined />} placeholder="Chọn Loại Voucher">
-              <Option value="Phần trăm">Phần trăm</Option>
-              <Option value="Số tiền">Số tiền</Option>
+              <Option value="Giảm giá số tiền">Giảm giá số tiền</Option>
+              <Option value="Giảm giá %">Giảm giá %</Option>
             </Select>
           </Form.Item>
           <Form.Item
-            name="MoTa"
+            name="moTa"
             label="Mô Tả"
           >
             <Input.TextArea prefix={<AlignLeftOutlined />} placeholder="Mô Tả Voucher" />
           </Form.Item>
           <Form.Item
-            name="SoLuong"
+            name="soLuong"
             label="Số Lượng"
-            rules={[{ required: true, message: 'Vui lòng nhập Số Lượng!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Số Lượng!' }]}
+          >
             <InputNumber min={1} style={{ width: '100%' }} prefix={<NumberOutlined />} placeholder="Số Lượng" />
           </Form.Item>
           <Form.Item
-            name="GiaTri"
+            name="giaTri"
             label="Giá Trị"
-            rules={[{ required: true, message: 'Vui lòng nhập Giá Trị!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Giá Trị!' }]}
+          >
             <InputNumber min={0} style={{ width: '100%' }} formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={value => value.replace(/\s?|(,*)/g, '')} prefix={<PoundOutlined />} placeholder="Giá Trị" />
           </Form.Item>
           <Form.Item
-            name="NgayBatDau"
+            name="ngayBatDau"
             label="Ngày Bắt Đầu"
-            rules={[{ required: true, message: 'Vui lòng chọn Ngày Bắt Đầu!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Ngày Bắt Đầu!' }]}
+          >
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" prefix={<CalendarOutlined />} />
           </Form.Item>
           <Form.Item
-            name="NgayKetThuc"
+            name="ngayKetThuc"
             label="Ngày Kết Thúc"
-            rules={[{ required: true, message: 'Vui lòng chọn Ngày Kết Thúc!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Ngày Kết Thúc!' }]}
+          >
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" prefix={<CalendarOutlined />} />
           </Form.Item>
           <Form.Item
-            name="TrangThai"
+            name="trangThai"
             label="Trạng Thái"
-            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
+          >
             <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Hết hạn">Hết hạn</Option>
-              <Option value="Tạm ngưng">Tạm ngưng</Option>
+              <Option value={1}>Đang hoạt động</Option>
+              <Option value={0}>Tạm ngưng</Option>
             </Select>
           </Form.Item>
           <Form.Item
-            name="DonToiThieu"
+            name="donToiThieu"
             label="Đơn Tối Thiểu"
-            rules={[{ required: true, message: 'Vui lòng nhập Đơn Tối Thiểu!' }]
-          }>
-            <InputNumber min={0} style={{ width: '100%' }} formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')} parser={value => value.replace(/\s?|(,*)/g, '')} prefix={<PoundOutlined />} placeholder="Đơn Tối Thiểu" />
+            rules={[{ required: true, message: 'Vui lòng nhập Đơn Tối Thiểu!' }]}
+          >
+            <InputNumber
+              min={0}
+              style={{ width: '100%' }}
+              placeholder="Đơn Tối Thiểu"
+            />
           </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit">

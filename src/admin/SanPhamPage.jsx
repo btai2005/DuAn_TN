@@ -29,10 +29,6 @@ export default function SanPhamPage() {
     { id: 'DM001', name: 'Áo' },
     { id: 'DM002', name: 'Quần' },
   ]);
-  const [khuyenMaiData] = useState([
-    { id: 'KM001', name: 'Giảm 10%' },
-    { id: 'KM002', name: 'Freeship' },
-  ]);
   const [kichThuocData] = useState([
     { id: 'KT001', name: 'S' },
     { id: 'KT002', name: 'M' },
@@ -51,7 +47,6 @@ export default function SanPhamPage() {
       ID_XuatXu: 'XX001',
       ID_DanhMuc: 'DM001',
       TrangThai: 'Đang kinh doanh',
-      ID_KhuyenMai: 'KM001',
       chiTiet: [
         { MaSanPhamChiTiet: 'CT001', SoLuong: 100, GiaBan: 200000, GiaGiamGia: 180000, ID_Size: 'KT001', ID_MauSac: 'MS001', Images: ['url1', 'url2'] },
         { MaSanPhamChiTiet: 'CT002', SoLuong: 50, GiaBan: 200000, GiaGiamGia: 0, ID_Size: 'KT002', ID_MauSac: 'MS002', Images: ['url3'] },
@@ -65,7 +60,6 @@ export default function SanPhamPage() {
       ID_XuatXu: 'XX002',
       ID_DanhMuc: 'DM002',
       TrangThai: 'Ngừng kinh doanh',
-      ID_KhuyenMai: 'KM002',
       chiTiet: [
         { MaSanPhamChiTiet: 'CT003', SoLuong: 70, GiaBan: 350000, GiaGiamGia: 300000, ID_Size: 'KT001', ID_MauSac: 'MS002', Images: ['url4'] },
       ],
@@ -97,13 +91,6 @@ export default function SanPhamPage() {
       ),
     },
     { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
-    {
-      title: 'Khuyến Mãi',
-      key: 'ID_KhuyenMai',
-      render: (_, record) => (
-        khuyenMaiData.find(km => km.id === record.ID_KhuyenMai)?.name || 'N/A'
-      ),
-    },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -273,16 +260,6 @@ export default function SanPhamPage() {
             <Select placeholder="Chọn Trạng Thái">
               <Option value="Đang kinh doanh">Đang kinh doanh</Option>
               <Option value="Ngừng kinh doanh">Ngừng kinh doanh</Option>
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="ID_KhuyenMai"
-            label="Khuyến Mãi"
-          >
-            <Select allowClear placeholder="Chọn Khuyến Mãi (Không bắt buộc)">
-              {khuyenMaiData.map(item => (
-                <Option key={item.id} value={item.id}>{item.name}</Option>
-              ))}
             </Select>
           </Form.Item>
 

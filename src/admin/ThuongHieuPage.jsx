@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
 import { TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
@@ -9,32 +9,19 @@ export default function ThuongHieuPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
+  const [thuongHieus, setThuongHieus] = useState([]);
 
-  const [data] = useState([
-    {
-      ID: '1',
-      MaThuongHieu: 'TH001',
-      TenThuongHieu: 'Nike',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '2',
-      MaThuongHieu: 'TH002',
-      TenThuongHieu: 'Adidas',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '3',
-      MaThuongHieu: 'TH003',
-      TenThuongHieu: 'Puma',
-      TrangThai: 'Đang hoạt động',
-    },
-  ]);
+  useEffect(() => {
+    fetch('http://localhost:8080/api/thuong-hieu/getAll')
+      .then(response => response.json())
+      .then(data => setThuongHieus(data))
+      .catch(error => console.error('Lỗi khi gọi API kích thước:', error));
+  }, []);
 
   const columns = [
-    { title: 'Mã Thương Hiệu', dataIndex: 'MaThuongHieu', key: 'MaThuongHieu' },
-    { title: 'Tên Thương Hiệu', dataIndex: 'TenThuongHieu', key: 'TenThuongHieu' },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Tên Thương Hiệu', dataIndex: 'tenThuongHieu', key: 'tenThuongHieu' },
+    { title: 'Trạng Thái', dataIndex: 'trangThai', key: 'trangThai' },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -74,15 +61,61 @@ export default function ThuongHieuPage() {
     setEditingItem(item);
     form.setFieldsValue({
       ...item,
+      tenThuongHieu: item.tenThuongHieu
     });
     showModal();
   };
 
   const onFinish = (values) => {
     if (editingItem) {
-      message.success('Cập nhật thành công (chỉ giao diện)!');
+      // Cập nhật
+      fetch(`http://localhost:8080/api/thuong-hieu/update/${editingItem.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingItem.id,
+          tenThuongHieu: values.tenThuongHieu,
+          trangThai: Number(values.trangThai)
+        }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Cập nhật thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Cập nhật thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/thuong-hieu/getAll')
+            .then(res => res.json())
+            .then(data => setThuongHieus(data));
+        })
+        .catch(error => {
+          message.error('Cập nhật thất bại!');
+          console.error(error);
+        });
     } else {
-      message.success('Thêm mới thành công (chỉ giao diện)!');
+      // Thêm mới
+      fetch('http://localhost:8080/api/thuong-hieu/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenThuongHieu: values.tenThuongHieu,
+          trangThai: Number(values.trangThai)
+        }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Thêm mới thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/thuong-hieu/getAll')
+            .then(res => res.json())
+            .then(data => setThuongHieus(data));
+        })
+        .catch(error => {
+          message.error('Thêm mới thất bại!');
+          console.error(error);
+        });
     }
     handleCancel();
   };
@@ -93,7 +126,7 @@ export default function ThuongHieuPage() {
         <h2 className="page-title">Quản lý Thương Hiệu</h2>
         <Button type="primary" onClick={handleAdd}>Thêm Thương Hiệu Mới</Button>
       </div>
-      <Table dataSource={data} columns={columns} rowKey="ID" pagination={false} />
+      <Table dataSource={thuongHieus} columns={columns} rowKey="id" pagination={false} />
 
       <Modal
         title={editingItem ? "Sửa Thương Hiệu" : "Thêm Thương Hiệu"}
@@ -105,30 +138,28 @@ export default function ThuongHieuPage() {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
+          initialValues={{ trangThai: 1 }}
         >
+          {editingItem && (
+            <Form.Item name="id" label="ID">
+              <Input disabled />
+            </Form.Item>
+          )}
           <Form.Item
-            name="MaThuongHieu"
-            label="Mã Thương Hiệu"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Thương Hiệu!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Mã Thương Hiệu" />
-          </Form.Item>
-          <Form.Item
-            name="TenThuongHieu"
+            name="tenThuongHieu"
             label="Tên Thương Hiệu"
             rules={[{ required: true, message: 'Vui lòng nhập Tên Thương Hiệu!' }]}
           >
             <Input prefix={<TagOutlined />} placeholder="Tên Thương Hiệu" />
           </Form.Item>
           <Form.Item
-            name="TrangThai"
+            name="trangThai"
             label="Trạng Thái"
             rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
           >
             <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Không hoạt động">Không hoạt động</Option>
+              <Option value={1}>Đang hoạt động</Option>
+              <Option value={0}>Không hoạt động</Option>
             </Select>
           </Form.Item>
           <Form.Item>

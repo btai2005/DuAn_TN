@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Select, Space, message, Popconfirm } from 'antd';
 import { UserOutlined, MailOutlined, PhoneOutlined, HomeOutlined, IdcardOutlined, KeyOutlined, CalendarOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 import moment from 'moment';
@@ -11,49 +11,41 @@ export default function NhanVienPage() {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [form] = Form.useForm();
 
-  // Dữ liệu giả định cho nhân viên
-  const [employees] = useState([
-    {
-      ID: '1',
-      MaNhanVien: 'NV001',
-      TenNhanVien: 'Nguyễn Văn A',
-      Email: 'vana@example.com',
-      SoDienThoai: '0987654321',
-      NgaySinh: '1990-01-15',
-      GioiTinh: 'Nam',
-      DiaChi: '123 Đường ABC, Quận 1',
-      VaiTro: 'Quản lý',
-      MatKhau: '****',
-      CCCD: '123456789012',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '2',
-      MaNhanVien: 'NV002',
-      TenNhanVien: 'Trần Thị B',
-      Email: 'thib@example.com',
-      SoDienThoai: '0912345678',
-      NgaySinh: '1992-05-20',
-      GioiTinh: 'Nữ',
-      DiaChi: '456 Đường XYZ, Quận 3',
-      VaiTro: 'Nhân viên',
-      MatKhau: '****',
-      CCCD: '234567890123',
-      TrangThai: 'Đang hoạt động',
-    },
-  ]);
+  const [nhanViens, setNhanViens] = useState([]);
+
+  useEffect(() => {
+    fetch('http://localhost:8080/api/nhanvien')
+      .then(response => response.json())
+      .then(data => setNhanViens(data))
+      .catch(error => console.error('Lỗi khi gọi API kích thước:', error));
+  }, []);
 
   const columns = [
-    { title: 'Mã NV', dataIndex: 'MaNhanVien', key: 'MaNhanVien' },
-    { title: 'Tên NV', dataIndex: 'TenNhanVien', key: 'TenNhanVien' },
-    { title: 'Email', dataIndex: 'Email', key: 'Email' },
-    { title: 'SĐT', dataIndex: 'SoDienThoai', key: 'SoDienThoai' },
-    { title: 'Ngày Sinh', dataIndex: 'NgaySinh', key: 'NgaySinh' },
-    { title: 'Giới Tính', dataIndex: 'GioiTinh', key: 'GioiTinh' },
-    { title: 'Địa Chỉ', dataIndex: 'DiaChi', key: 'DiaChi' },
-    { title: 'Vai Trò', dataIndex: 'VaiTro', key: 'VaiTro' },
-    { title: 'CCCD', dataIndex: 'CCCD', key: 'CCCD' },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
+    { title: 'ID', dataIndex: 'id', key: 'id' },
+    { title: 'Tên NV', dataIndex: 'tenNhanVien', key: 'tenNhanVien' },
+    { title: 'Email', dataIndex: 'email', key: 'email' },
+    { title: 'SĐT', dataIndex: 'soDienThoai', key: 'soDienThoai' },
+    { title: 'Ngày Sinh', dataIndex: 'ngaySinh', key: 'ngaySinh' },
+    {
+      title: 'Giới Tính',
+      dataIndex: 'gioiTinh',
+      key: 'gioiTinh',
+      render: value => value ? 'Nam' : 'Nữ'
+    },
+    { title: 'Địa Chỉ', dataIndex: 'diaChi', key: 'diaChi' },
+    {
+      title: 'Vai Trò',
+      dataIndex: 'vaiTro',
+      key: 'vaiTro',
+      render: value => value ? 'Quản lý' : 'Nhân viên'
+    },
+    { title: 'CCCD', dataIndex: 'cccd', key: 'cccd', render: value => value || '' },
+    {
+      title: 'Trạng Thái',
+      dataIndex: 'trangThai',
+      key: 'trangThai',
+      render: value => value ? 'Đang hoạt động' : 'Tạm ngưng'
+    },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -93,16 +85,72 @@ export default function NhanVienPage() {
     setEditingEmployee(employee);
     form.setFieldsValue({
       ...employee,
-      NgaySinh: employee.NgaySinh ? moment(employee.NgaySinh) : null,
+      ngaySinh: employee.ngaySinh ? moment(employee.ngaySinh) : null,
+      gioiTinh: employee.gioiTinh === true || employee.gioiTinh === 1 ? 'Nam' : 'Nữ',
+      vaiTro: employee.vaiTro ? 'Quản lý' : 'Nhân viên',
+      trangThai: employee.trangThai ? 1 : 0,
+      cccd: employee.cccd || '',
     });
     showModal();
   };
 
   const onFinish = (values) => {
+    // Map giá trị đúng với backend
+    const dataSend = {
+      ...values,
+      tenNhanVien: values.tenNhanVien,
+      email: values.email,
+      soDienThoai: values.soDienThoai,
+      ngaySinh: values.ngaySinh ? values.ngaySinh.format('YYYY-MM-DD') : null,
+      gioiTinh: values.gioiTinh === 'Nam' ? 1 : 0,
+      diaChi: values.diaChi,
+      vaiTro: values.vaiTro === 'Quản lý' ? true : false,
+      cccd: values.cccd,
+      trangThai: Number(values.trangThai),
+      matKhau: values.matKhau,
+    };
     if (editingEmployee) {
-      message.success('Cập nhật nhân viên thành công (chỉ giao diện)!');
+      // Sửa
+      fetch(`http://localhost:8080/api/nhanvien/update/${editingEmployee.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...dataSend, id: editingEmployee.id }),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Cập nhật thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Cập nhật nhân viên thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/nhanvien')
+            .then(res => res.json())
+            .then(data => setNhanViens(data));
+        })
+        .catch(error => {
+          message.error('Cập nhật thất bại!');
+          console.error(error);
+        });
     } else {
-      message.success('Thêm nhân viên thành công (chỉ giao diện)!');
+      // Thêm mới
+      fetch('http://localhost:8080/api/nhanvien/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataSend),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Thêm mới thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Thêm nhân viên thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/nhanvien')
+            .then(res => res.json())
+            .then(data => setNhanViens(data));
+        })
+        .catch(error => {
+          message.error('Thêm mới thất bại!');
+          console.error(error);
+        });
     }
     handleCancel();
   };
@@ -113,7 +161,7 @@ export default function NhanVienPage() {
         <h1 className="page-title">Quản lý Nhân Viên</h1>
         <Button type="primary" onClick={handleAdd}>Thêm Nhân Viên Mới</Button>
       </div>
-      <Table dataSource={employees} columns={columns} rowKey="ID" pagination={false} />
+      <Table dataSource={nhanViens} columns={columns} rowKey="id" pagination={false} />
 
       <Modal
         title={editingEmployee ? "Sửa Nhân Viên" : "Thêm Nhân Viên"}
@@ -125,97 +173,93 @@ export default function NhanVienPage() {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ GioiTinh: 'Nam', VaiTro: 'Nhân viên', TrangThai: 'Đang hoạt động' }}
+          initialValues={{ gioiTinh: 'Nam', vaiTro: 'Nhân viên', trangThai: 1 }}
         >
+          {editingEmployee && (
+            <Form.Item name="id" label="ID">
+              <Input disabled />
+            </Form.Item>
+          )}
           <Form.Item
-            name="MaNhanVien"
-            label="Mã Nhân Viên"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Nhân Viên!' }]
-          }>
-            <Input prefix={<UserOutlined />} placeholder="Mã Nhân Viên" />
-          </Form.Item>
-          <Form.Item
-            name="TenNhanVien"
+            name="tenNhanVien"
             label="Tên Nhân Viên"
-            rules={[{ required: true, message: 'Vui lòng nhập Tên Nhân Viên!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Tên Nhân Viên!' }]}
+          >
             <Input prefix={<UserOutlined />} placeholder="Tên Nhân Viên" />
           </Form.Item>
           <Form.Item
-            name="Email"
+            name="email"
             label="Email"
-            rules={[{ required: true, type: 'email', message: 'Vui lòng nhập Email hợp lệ!' }]
-          }>
+            rules={[{ required: true, type: 'email', message: 'Vui lòng nhập Email hợp lệ!' }]}
+          >
             <Input prefix={<MailOutlined />} placeholder="Email" />
           </Form.Item>
           <Form.Item
-            name="SoDienThoai"
+            name="soDienThoai"
             label="Số Điện Thoại"
-            rules={[{ required: true, message: 'Vui lòng nhập Số Điện Thoại!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Số Điện Thoại!' }]}
+          >
             <Input prefix={<PhoneOutlined />} placeholder="Số Điện Thoại" />
           </Form.Item>
           <Form.Item
-            name="NgaySinh"
+            name="ngaySinh"
             label="Ngày Sinh"
-            rules={[{ required: true, message: 'Vui lòng chọn Ngày Sinh!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Ngày Sinh!' }]}
+          >
             <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" prefix={<CalendarOutlined />} />
           </Form.Item>
           <Form.Item
-            name="GioiTinh"
+            name="gioiTinh"
             label="Giới Tính"
-            rules={[{ required: true, message: 'Vui lòng chọn Giới Tính!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Giới Tính!' }]}
+          >
             <Select prefix={<QuestionCircleOutlined />} placeholder="Chọn Giới Tính">
               <Option value="Nam">Nam</Option>
               <Option value="Nữ">Nữ</Option>
-              <Option value="Khác">Khác</Option>
             </Select>
           </Form.Item>
           <Form.Item
-            name="DiaChi"
+            name="diaChi"
             label="Địa Chỉ"
-            rules={[{ required: true, message: 'Vui lòng nhập Địa Chỉ!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng nhập Địa Chỉ!' }]}
+          >
             <Input prefix={<HomeOutlined />} placeholder="Địa Chỉ" />
           </Form.Item>
           <Form.Item
-            name="VaiTro"
+            name="vaiTro"
             label="Vai Trò"
-            rules={[{ required: true, message: 'Vui lòng chọn Vai Trò!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Vai Trò!' }]}
+          >
             <Select prefix={<UserOutlined />} placeholder="Chọn Vai Trò">
               <Option value="Quản lý">Quản lý</Option>
               <Option value="Nhân viên">Nhân viên</Option>
-              <Option value="Kế toán">Kế toán</Option>
             </Select>
           </Form.Item>
           <Form.Item
-            name="MatKhau"
-            label="Mật Khẩu"
-            rules={[{ required: !editingEmployee, message: 'Vui lòng nhập Mật Khẩu!' }]} // Yêu cầu khi thêm mới, không yêu cầu khi sửa
-          >
-            <Input.Password prefix={<KeyOutlined />} placeholder="Mật Khẩu" />
-          </Form.Item>
-          <Form.Item
-            name="CCCD"
+            name="cccd"
             label="CCCD"
-            rules={[{ required: true, message: 'Vui lòng nhập CCCD!' }]
-          }>
+          >
             <Input prefix={<IdcardOutlined />} placeholder="CCCD" />
           </Form.Item>
           <Form.Item
-            name="TrangThai"
+            name="trangThai"
             label="Trạng Thái"
-            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]
-          }>
+            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
+          >
             <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Tạm ngưng">Tạm ngưng</Option>
-              <Option value="Đã nghỉ việc">Đã nghỉ việc</Option>
+              <Option value={1}>Đang hoạt động</Option>
+              <Option value={0}>Tạm ngưng</Option>
             </Select>
           </Form.Item>
+          {!editingEmployee && (
+            <Form.Item
+              name="matKhau"
+              label="Mật Khẩu"
+              rules={[{ required: true, message: 'Vui lòng nhập Mật Khẩu!' }]}
+            >
+              <Input.Password prefix={<KeyOutlined />} placeholder="Mật Khẩu" />
+            </Form.Item>
+          )}
           <Form.Item>
             <Button type="primary" htmlType="submit">
               {editingEmployee ? "Cập Nhật" : "Thêm Mới"}

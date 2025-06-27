@@ -9,9 +9,7 @@ const { Search } = Input;
 const menuItems = [
   { key: 'home', label: <Link to="/home">Trang chủ</Link> },
   { key: 'products', label: <Link to="/products">Sản phẩm</Link> },
-  { key: 'sale', label: <Link to="/sale">Khuyến mãi</Link> },
   { key: 'blog', label: <Link to="/blog">Tin tức</Link> },
-  { key: 'orders', label: <Link to="/orders">Lịch sử đơn hàng</Link> },
   { key: 'contact', label: <Link to="/contact">Liên hệ</Link> },
 ];
 
@@ -21,8 +19,12 @@ const userMenuItems = [
     label: 'Thông tin cá nhân',
   },
   {
-    key: 'orders',
-    label: 'Đơn hàng của tôi',
+    key: 'order-history',
+    label: (
+      <span>
+        <Link to="/orders" style={{ color: 'inherit', textDecoration: 'none' }}>Đơn hàng của tôi</Link>
+      </span>
+    ),
   },
   {
     key: 'wishlist',
@@ -81,6 +83,13 @@ function Header() {
             lineHeight: '100px',
           }}
         />
+
+        {/* Thêm menu thương hiệu */}
+        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', marginLeft: '32px' }}>
+          <a href="/products?brand=Nike" style={{ color: '#222', fontWeight: 700, textDecoration: 'none', fontSize: '18px', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#1677ff'} onMouseOut={e => e.target.style.color = '#222'}>Nike</a>
+          <a href="/products?brand=Adidas" style={{ color: '#222', fontWeight: 700, textDecoration: 'none', fontSize: '18px', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#1677ff'} onMouseOut={e => e.target.style.color = '#222'}>Adidas</a>
+          <a href="/products?brand=Puma" style={{ color: '#222', fontWeight: 700, textDecoration: 'none', fontSize: '18px', transition: 'color 0.2s' }} onMouseOver={e => e.target.style.color = '#1677ff'} onMouseOut={e => e.target.style.color = '#222'}>Puma</a>
+        </div>
 
         {/* Phần tìm kiếm và giỏ hàng */}
         <div style={{ display: 'flex', alignItems: 'center', marginLeft: '10px', height: '100%', gap: '10px' }}>

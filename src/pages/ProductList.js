@@ -1,5 +1,6 @@
 import React from 'react';
 import { Row, Col, Card, Button, Select, Input } from 'antd';
+import { useNavigate } from 'react-router-dom';
 
 const { Option } = Select;
 
@@ -14,6 +15,7 @@ const products = [
 ];
 
 function ProductList() {
+  const navigate = useNavigate();
   return (
     <div style={{ padding: 24 }}>
       <h2>Danh sách sản phẩm</h2>
@@ -42,7 +44,7 @@ function ProductList() {
                   cover={<img alt={product.name} src={product.img} />}
                 >
                   <Card.Meta title={product.name} description={`Giá: ${product.price.toLocaleString()}đ`} />
-                  <Button type="primary" style={{ marginTop: 10 }}>Xem chi tiết</Button>
+                  <Button type="primary" style={{ marginTop: 10 }} onClick={() => navigate(`/products/${product.id}`)}>Xem chi tiết</Button>
                 </Card>
               </Col>
             ))}

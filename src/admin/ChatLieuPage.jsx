@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm } from 'antd';
 import { TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
+import { message } from 'antd';
 
 const { Option } = Select;
 
@@ -9,32 +10,26 @@ export default function ChatLieuPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
+  const [chatLieus, setChatLieus] = useState([]);
+  const [kichThuocs, setKichThuocs] = useState([]);
+  const [xuatXus, setXuatXus] = useState([]);
 
-  const [data] = useState([
-    {
-      ID: '1',
-      MaChatLieu: 'CL001',
-      TenChatLieu: 'Cotton',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '2',
-      MaChatLieu: 'CL002',
-      TenChatLieu: 'Len',
-      TrangThai: 'Đang hoạt động',
-    },
-    {
-      ID: '3',
-      MaChatLieu: 'CL003',
-      TenChatLieu: 'Polyester',
-      TrangThai: 'Đang hoạt động',
-    },
-  ]);
+  useEffect(() => {
+    fetch('http://localhost:8080/api/chat-lieu/getAll')
+      .then(response => response.json())
+      .then(data => setChatLieus(data))
+      .catch(error => console.error('Lỗi khi gọi API chất liệu:', error));
+  }, []);
 
   const columns = [
-    { title: 'Mã Chất Liệu', dataIndex: 'MaChatLieu', key: 'MaChatLieu' },
-    { title: 'Tên Chất Liệu', dataIndex: 'TenChatLieu', key: 'TenChatLieu' },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
+    { title: 'Id', dataIndex: 'id', key: 'id' },
+    { title: 'Tên Chất Liệu', dataIndex: 'tenChatLieu', key: 'tenChatLieu' },
+    {
+      title: 'Trạng Thái',
+      dataIndex: 'trangThai',
+      key: 'trangThai',
+      render: (value) => value === 1 ? 'Đang hoạt động' : 'Không hoạt động'
+    },
     {
       title: 'Hành Động',
       key: 'actions',
@@ -71,6 +66,7 @@ export default function ChatLieuPage() {
   };
 
   const handleEdit = (item) => {
+    console.log('ITEM SỬA:', item);
     setEditingItem(item);
     form.setFieldsValue({
       ...item,
@@ -80,11 +76,56 @@ export default function ChatLieuPage() {
 
   const onFinish = (values) => {
     if (editingItem) {
-      message.success('Cập nhật thành công (chỉ giao diện)!');
+      updateKichThuoc(editingItem.id, values);
     } else {
-      message.success('Thêm mới thành công (chỉ giao diện)!');
+      const { id, ...dataToSend } = values;
+      dataToSend.trangThai = Number(dataToSend.trangThai);
+      console.log('DỮ LIỆU GỬI LÊN:', dataToSend);
+      fetch('http://localhost:8080/api/chat-lieu/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dataToSend),
+      })
+        .then(response => {
+          if (!response.ok) throw new Error('Thêm mới thất bại');
+          return response.json();
+        })
+        .then(data => {
+          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          fetch('http://localhost:8080/api/chat-lieu/getAll')
+            .then(res => res.json())
+            .then(data => setChatLieus(data));
+        })
+        .catch(error => {
+          message.error('Thêm mới thất bại!');
+          console.error(error);
+        });
     }
     handleCancel();
+  };
+
+  const updateKichThuoc = (id, values) => {
+    fetch(`http://localhost:8080/api/chat-lieu/update/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(values),
+    })
+      .then(response => {
+        if (!response.ok) throw new Error('Cập nhật thất bại');
+        return response.json();
+      })
+      .then(data => {
+        message.success({ content: 'Cập nhật thành công!', duration: 2 });
+        fetch('http://localhost:8080/api/chat-lieu/getAll')
+          .then(res => res.json())
+          .then(data => setChatLieus(data));
+      })
+      .catch(error => {
+        message.error('Cập nhật thất bại!');
+        console.error(error);
+      });
   };
 
   return (
@@ -93,8 +134,8 @@ export default function ChatLieuPage() {
         <h2 className="page-title">Quản lý Chất Liệu</h2>
         <Button type="primary" onClick={handleAdd}>Thêm Chất Liệu Mới</Button>
       </div>
-      <Table dataSource={data} columns={columns} rowKey="ID" pagination={false} />
-
+      <Table dataSource={chatLieus} columns={columns} rowKey="id" pagination={false} />
+      
       <Modal
         title={editingItem ? "Sửa Chất Liệu" : "Thêm Chất Liệu"}
         visible={isModalVisible}
@@ -105,30 +146,18 @@ export default function ChatLieuPage() {
           form={form}
           layout="vertical"
           onFinish={onFinish}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
+          initialValues={{ trangThai: 'Đang hoạt động' }}
         >
-          <Form.Item
-            name="MaChatLieu"
-            label="Mã Chất Liệu"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Chất Liệu!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Mã Chất Liệu" />
+          <Form.Item name="id" label="ID">
+            <Input disabled />
           </Form.Item>
-          <Form.Item
-            name="TenChatLieu"
-            label="Tên Chất Liệu"
-            rules={[{ required: true, message: 'Vui lòng nhập Tên Chất Liệu!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Tên Chất Liệu" />
+          <Form.Item name="tenChatLieu" label="Tên Chất Liệu">
+            <Input />
           </Form.Item>
-          <Form.Item
-            name="TrangThai"
-            label="Trạng Thái"
-            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
-          >
-            <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang hoạt động">Đang hoạt động</Option>
-              <Option value="Không hoạt động">Không hoạt động</Option>
+          <Form.Item name="trangThai" label="Trạng Thái">
+            <Select>
+              <Option value={1}>Đang hoạt động</Option>
+              <Option value={0}>Không hoạt động</Option>
             </Select>
           </Form.Item>
           <Form.Item>
@@ -141,6 +170,8 @@ export default function ChatLieuPage() {
           </Form.Item>
         </Form>
       </Modal>
+      <Button onClick={() => message.success('Test thông báo!')}>Test</Button>
+
     </div>
   );
 } 
