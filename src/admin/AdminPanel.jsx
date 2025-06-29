@@ -115,7 +115,10 @@ function AdminPanel() {
         }}
         width={200}
       >
-        <div className="logo" >Admin Panel</div>
+        <div className="sidebar-logo">
+          <img src="/logo.png" alt="Logo" />
+        </div>
+        <div className="sidebar-title">Admin Panel</div>
         <Menu
           theme="dark"
           mode="inline"

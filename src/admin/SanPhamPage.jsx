@@ -1,412 +1,966 @@
-import React, { useState } from 'react';
-import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm, Upload } from 'antd';
-import { ShoppingOutlined, TagOutlined, UploadOutlined } from '@ant-design/icons';
-import '../styles/AdminPanel.css';
-import useMauSacStore from './stores/mauSacStore';
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import {
+  
+  Select,
+  Input
+} from "antd";
+
+import "../styles/AdminPanel.css";
+import "../styles/SalePage.css";
 
 const { Option } = Select;
 
-export default function SanPhamPage() {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
-  const [form] = Form.useForm();
+const SanPhamPage = () => {
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [origins, setOrigins] = useState([]);
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState("");
+  const [brand, setBrand] = useState("");
+  const [material, setMaterial] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({
+    tenSanPham: "",
+    idDanhMuc: "",
+    idThuongHieu: "",
+    idChatLieu: "",
+    idXuatXu: "",
+    idKhuyenMai: "",
+    giaBan: "",
+    giaGiamGia: "",
+    trangThai: 1,
+  });
+  const [loading, setLoading] = useState(false);
 
-  // Trạng thái cho modal thêm màu sắc nhanh
-  const [isAddMauSacModalVisible, setIsAddMauSacModalVisible] = useState(false);
-  const [addMauSacForm] = Form.useForm();
+  // Sửa sản phẩm
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editForm, setEditForm] = useState({});
+  const [editId, setEditId] = useState(null);
 
-  // Dữ liệu giả định cho các dropdown (khóa ngoại)
-  const [thuongHieuData] = useState([
-    { id: 'TH001', name: 'Nike' },
-    { id: 'TH002', name: 'Adidas' },
-    { id: 'TH003', name: 'Puma' },
-  ]);
-  const [xuatXuData] = useState([
-    { id: 'XX001', name: 'Việt Nam' },
-    { id: 'XX002', name: 'Trung Quốc' },
-  ]);
-  const [danhMucData] = useState([
-    { id: 'DM001', name: 'Áo' },
-    { id: 'DM002', name: 'Quần' },
-  ]);
-  const [kichThuocData] = useState([
-    { id: 'KT001', name: 'S' },
-    { id: 'KT002', name: 'M' },
-  ]);
-  
-  // Sử dụng dữ liệu màu sắc từ store
-  const { mauSacData, addMauSac } = useMauSacStore();
+  // State cho sản phẩm chi tiết
+  const [showChiTietModal, setShowChiTietModal] = useState(false);
+  const [chiTietProduct, setChiTietProduct] = useState(null);
+  const [chiTietList, setChiTietList] = useState([]);
+  const [loadingChiTiet, setLoadingChiTiet] = useState(false);
 
-  // Dữ liệu giả định cho sản phẩm
-  const [data] = useState([
-    {
-      ID: '1',
-      MaSanPham: 'SP001',
-      TenSanPham: 'Áo thun Nike',
-      ID_ThuongHieu: 'TH001',
-      ID_XuatXu: 'XX001',
-      ID_DanhMuc: 'DM001',
-      TrangThai: 'Đang kinh doanh',
-      chiTiet: [
-        { MaSanPhamChiTiet: 'CT001', SoLuong: 100, GiaBan: 200000, GiaGiamGia: 180000, ID_Size: 'KT001', ID_MauSac: 'MS001', Images: ['url1', 'url2'] },
-        { MaSanPhamChiTiet: 'CT002', SoLuong: 50, GiaBan: 200000, GiaGiamGia: 0, ID_Size: 'KT002', ID_MauSac: 'MS002', Images: ['url3'] },
-      ],
-    },
-    {
-      ID: '2',
-      MaSanPham: 'SP002',
-      TenSanPham: 'Quần jean Adidas',
-      ID_ThuongHieu: 'TH002',
-      ID_XuatXu: 'XX002',
-      ID_DanhMuc: 'DM002',
-      TrangThai: 'Ngừng kinh doanh',
-      chiTiet: [
-        { MaSanPhamChiTiet: 'CT003', SoLuong: 70, GiaBan: 350000, GiaGiamGia: 300000, ID_Size: 'KT001', ID_MauSac: 'MS002', Images: ['url4'] },
-      ],
-    },
-  ]);
+  const [lastAddedProductId, setLastAddedProductId] = useState(null);
+  const [mauSacs, setMauSacs] = useState([]);
+  const [kichThuocs, setKichThuocs] = useState([]);
+  const [spctForm, setSpctForm] = useState({
+    idMauSac: "",
+    idKichThuoc: "",
+    giaBan: "",
+    soLuong: ""
+  });
+  const [spctList, setSpctList] = useState([]);
 
-  const columns = [
-    { title: 'Mã SP', dataIndex: 'MaSanPham', key: 'MaSanPham' },
-    { title: 'Tên SP', dataIndex: 'TenSanPham', key: 'TenSanPham' },
-    {
-      title: 'Thương Hiệu',
-      key: 'ID_ThuongHieu',
-      render: (_, record) => (
-        thuongHieuData.find(th => th.id === record.ID_ThuongHieu)?.name || 'N/A'
-      ),
-    },
-    {
-      title: 'Xuất Xứ',
-      key: 'ID_XuatXu',
-      render: (_, record) => (
-        xuatXuData.find(xx => xx.id === record.ID_XuatXu)?.name || 'N/A'
-      ),
-    },
-    {
-      title: 'Danh Mục',
-      key: 'ID_DanhMuc',
-      render: (_, record) => (
-        danhMucData.find(dm => dm.id === record.ID_DanhMuc)?.name || 'N/A'
-      ),
-    },
-    { title: 'Trạng Thái', dataIndex: 'TrangThai', key: 'TrangThai' },
-    {
-      title: 'Hành Động',
-      key: 'actions',
-      render: (_, record) => (
-        <Space size="middle">
-          <Button type="primary" onClick={() => handleEdit(record)}>Sửa</Button>
-          <Popconfirm
-            title="Bạn có chắc chắn muốn xóa sản phẩm này?"
-            onConfirm={() => message.info(`Bạn đã click Xóa sản phẩm ${record.MaSanPham}`)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button type="danger">Xóa</Button>
-          </Popconfirm>
-        </Space>
-      ),
-    },
+  // Lấy danh sách sản phẩm
+  const fetchProducts = () => {
+    axios
+      .get("http://localhost:8080/api/san-pham/getAll")
+      .then((res) => {
+        console.log("Sản phẩm:", res.data);
+        setProducts(res.data);
+      })
+      .catch(() => setProducts([]));
+  };
+  useEffect(fetchProducts, []);
+
+  // Lấy danh mục
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/danh-muc/getAll")
+      .then((res) => {
+        console.log("Danh mục:", res.data);
+        setCategories(res.data);
+      })
+      .catch(() => setCategories([]));
+  }, []);
+
+  // Lấy thương hiệu
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/thuong-hieu/getAll")
+      .then((res) => {
+        console.log("Thương hiệu:", res.data);
+        setBrands(res.data);
+      })
+      .catch(() => setBrands([]));
+  }, []);
+
+  // Lấy chất liệu
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/chat-lieu/getAll")
+      .then((res) => setMaterials(res.data))
+      .catch(() => setMaterials([]));
+  }, []);
+
+  // Lấy xuất xứ
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/xuat-xu/getAll")
+      .then((res) => setOrigins(res.data))
+      .catch(() => setOrigins([]));
+  }, []);
+
+  // Lọc sản phẩm theo tìm kiếm và filter
+  const filteredProducts = products.filter((product) => {
+    const matchSearch = product.tenSanPham
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+    const matchCategory = category ? product.idDanhMuc === category : true;
+    const matchBrand = brand ? product.idThuongHieu === brand : true;
+    const matchMaterial = material ? product.idChatLieu === material : true;
+    return matchSearch && matchCategory && matchBrand && matchMaterial;
+  });
+
+  const requiredFields = [
+    { key: "tenSanPham", label: "Tên sản phẩm" },
+    { key: "danhMuc", label: "Danh mục" },
+    { key: "thuongHieu", label: "Thương hiệu" },
+    { key: "chatLieu", label: "Chất liệu" },
+    { key: "xuatXu", label: "Xuất xứ" },
+    // Nếu khuyến mãi là bắt buộc thì thêm vào
   ];
 
-  const showModal = () => {
-    setIsModalVisible(true);
+  const findMissingFields = (product) => {
+    return requiredFields
+      .filter(
+        (field) =>
+          !product[field.key] ||
+          (typeof product[field.key] === "object" &&
+            Object.keys(product[field.key]).length === 0)
+      )
+      .map((field) => field.label);
   };
 
-  const handleCancel = () => {
-    setIsModalVisible(false);
-    setEditingItem(null);
-    form.resetFields();
-  };
-
-  const handleAdd = () => {
-    setEditingItem(null);
-    form.resetFields();
-    showModal();
-  };
-
-  const handleEdit = (item) => {
-    setEditingItem(item);
-    form.setFieldsValue({
-      ...item,
-    });
-    showModal();
-  };
-
-  const onFinish = (values) => {
-    if (editingItem) {
-      message.success('Cập nhật sản phẩm thành công (chỉ giao diện)!');
-    } else {
-      message.success('Thêm sản phẩm thành công (chỉ giao diện)!');
+  // Lấy màu sắc
+  useEffect(() => {
+    fetch("http://localhost:8080/api/mau-sac/getAll")
+      .then(res => res.json())
+      .then(data => setMauSacs(data))
+      .catch(() => setMauSacs([]));
+  }, []);
+  // Lấy kích thước
+  useEffect(() => {
+    fetch("http://localhost:8080/api/kich-thuoc/getAll")
+      .then(res => res.json())
+      .then(data => setKichThuocs(data))
+      .catch(() => setKichThuocs([]));
+  }, []);
+  // Lấy danh sách sản phẩm chi tiết khi có lastAddedProductId
+  useEffect(() => {
+    if (lastAddedProductId) {
+      fetch(`http://localhost:8080/api/san-pham-chi-tiet/${lastAddedProductId}`)
+        .then(res => res.json())
+        .then(data => setSpctList(Array.isArray(data) ? data : [data]))
+        .catch(() => setSpctList([]));
     }
-    handleCancel();
-  };
+  }, [lastAddedProductId]);
 
-  // Cấu hình upload ảnh
-  const props = {
-    name: 'file',
-    action: 'https://www.mocky.io/v2/5cc8019d300000980a055e76',
-    headers: {
-      authorization: 'authorization-text',
-    },
-    onChange(info) {
-      if (info.file.status !== 'uploading') {
-        console.log(info.file, info.fileList);
-      }
-      if (info.file.status === 'done') {
-        message.success(`${info.file.name} file uploaded successfully`);
-      } else if (info.file.status === 'error') {
-        message.error(`${info.file.name} file upload failed.`);
-      }
-    },
-  };
-
-  // Trong phần modal thêm màu sắc nhanh
-  const handleAddMauSac = (values) => {
-    const newID = `MS${String(mauSacData.length + 1).padStart(3, '0')}`;
-    const newItem = { ID: newID, MaMauSac: newID, ...values, TrangThai: 'Đang hoạt động' };
-    addMauSac(newItem);
-    message.success('Thêm màu sắc thành công!');
-    addMauSacForm.resetFields();
-    setIsAddMauSacModalVisible(false);
-
-    // Tự động chọn màu sắc mới trong form sản phẩm nếu đang ở chế độ thêm/sửa chi tiết
-    const chiTietList = form.getFieldValue('chiTiet') || [];
-    if (chiTietList.length > 0) {
-      const lastChiTiet = chiTietList[chiTietList.length - 1];
-      form.setFieldsValue({
-        chiTiet: [
-          ...chiTietList.slice(0, -1),
-          { ...lastChiTiet, ID_MauSac: newItem.ID }
-        ]
+  // Xử lý thêm sản phẩm
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+    console.log("Giá trị form gửi lên:", addForm);
+    const missing = findMissingFields(addForm);
+    // if (missing.length > 0) {
+    //   alert("Bạn còn thiếu: " + missing.join(", "));
+    //   return;
+    // }
+    const data = {
+      tenSanPham: addForm.tenSanPham,
+      thuongHieu: {
+        id: addForm.idThuongHieu,
+      },
+      xuatXu: {
+        id: addForm.idXuatXu
+      },
+      khuyenMai: {
+        id: addForm.idKhuyenMai
+      },
+      chatLieu: {
+        id: addForm.idChatLieu
+      },
+      danhMuc: {
+        id: addForm.idDanhMuc
+      },
+    };
+    setLoading(true);
+    try {
+      const res = await axios.post("http://localhost:8080/api/san-pham/add", {
+        ...data,
+        giaBan: Number(addForm.giaBan),
+        giaGiamGia: addForm.giaGiamGia ? Number(addForm.giaGiamGia) : 0,
+        trangThai: Number(addForm.trangThai),
       });
+      setShowAddModal(false);
+      setAddForm({
+        tenSanPham: "",
+        idDanhMuc: "",
+        idThuongHieu: "",
+        idChatLieu: "",
+        idXuatXu: "",
+        idKhuyenMai: "",
+        giaBan: "",
+        giaGiamGia: "",
+        trangThai: 1,
+      });
+      fetchProducts();
+      alert("Thêm sản phẩm thành công!");
+      // Lưu lại id sản phẩm vừa thêm (giả sử BE trả về id trong res.data.id)
+      setLastAddedProductId(res.data.id || null);
+    } catch (err) {
+      alert("Thêm sản phẩm thất bại!");
     }
+    setLoading(false);
+  };
+
+  const handleAddSpct = async (e) => {
+    e.preventDefault();
+    if (!spctProduct) return;
+    try {
+      await axios.post(
+        `http://localhost:8080/api/san-pham-chi-tiet/them/${spctProduct.id}`,
+        {
+          idKichThuoc: spctForm.idKichThuoc,
+          idMauSac: spctForm.idMauSac,
+          soLuong: Number(spctForm.soLuong),
+          giaBan: Number(spctForm.giaBan),
+          // Nếu có thêm trường ngày sản xuất, bạn có thể thêm ở đây
+          // ngaySanXuat: spctForm.ngaySanXuat
+        }
+      );
+      setSpctForm({ idMauSac: "", idKichThuoc: "", giaBan: "", soLuong: "" });
+      // Reload danh sách sản phẩm chi tiết
+      fetch(`http://localhost:8080/api/san-pham-chi-tiet/${spctProduct.id}`)
+        .then(res => res.json())
+        .then(data => setSpctList(Array.isArray(data) ? data : [data]))
+        .catch(() => setSpctList([]));
+      alert("Thêm biến thể thành công!");
+    } catch (err) {
+      alert("Thêm biến thể thất bại!");
+    }
+  };
+
+  // Xử lý sửa sản phẩm
+  const openEditModal = (product) => {
+    console.log(product);
+    setEditId(product.id);
+    setEditForm({
+      tenSanPham: product.tenSanPham || "",
+      idDanhMuc: product.danhMuc?.id || "",
+      idThuongHieu: product.thuongHieu?.id || "",
+      idChatLieu: product.chatLieu?.id || "",
+      idXuatXu: product.xuatXu?.id || "",
+      idKhuyenMai: product.khuyenMai?.id || "",
+      giaBan: product.giaBan || "",
+      giaGiamGia: product.giaGiamGia || "",
+      trangThai: product.trangThai,
+    });
+    setShowEditModal(true);
+  };
+
+  const handleEditProduct = async (e) => {
+    e.preventDefault();
+    console.log("Giá trị form gửi lên:", editForm);
+    const missing = findMissingFields(editForm);
+    const data = {
+      tenSanPham: editForm.tenSanPham,
+      thuongHieu: {
+        id: editForm.idThuongHieu,
+      },
+      xuatXu: {
+        id: editForm.idXuatXu
+      },
+      
+      chatLieu: {
+        id: editForm.idChatLieu
+      },
+      danhMuc: {
+        id: editForm.idDanhMuc
+      }
+    };
+    // if (missing.length > 0) {
+    //   alert("Bạn còn thiếu: " + missing.join(", "));
+    //   return;
+    // }
+    setLoading(true);
+    try {
+      await axios.put(`http://localhost:8080/api/san-pham/${editId}`, {
+        ...data,
+        giaBan: Number(editForm.giaBan),
+        giaGiamGia: editForm.giaGiamGia ? Number(editForm.giaGiamGia) : 0,
+        trangThai: Number(editForm.trangThai),
+      });
+      setShowEditModal(false);
+      setEditId(null);
+      setEditForm({});
+      fetchProducts();
+      alert("Cập nhật sản phẩm thành công!");
+    } catch (err) {
+      console.log("Lỗi cập nhật:", err.response?.data || err.message);
+      alert("Cập nhật sản phẩm thất bại!");
+    }
+    setLoading(false);
+  };
+
+  const openChiTietModal = (product) => {
+    setChiTietProduct(product);
+    setShowChiTietModal(true);
+    setLoadingChiTiet(true);
+    axios
+      .get(`http://localhost:8080/api/san-pham-chi-tiet/${product.id}`)
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : [res.data];
+        setChiTietList(data);
+      })
+      .catch(() => setChiTietList([]))
+      .finally(() => setLoadingChiTiet(false));
+  };
+  const closeChiTietModal = () => {
+    setShowChiTietModal(false);
+    setChiTietProduct(null);
+    setChiTietList([]);
+  };
+
+  useEffect(() => {
+    fetch("http://localhost:8080/api/san-pham/getAll")
+      .then((res) => res.json())
+      .then((data) => {
+        console.log("DATA SẢN PHẨM:", data);
+        setProducts(data);
+      });
+  }, []);
+
+  const [khuyenMais, setKhuyenMais] = useState([]);
+
+  useEffect(() => {
+    axios
+      .get("http://localhost:8080/api/khuyenmai")
+      .then((res) => setKhuyenMais(res.data))
+      .catch(() => setKhuyenMais([]));
+  }, []);
+
+  const [showSpctModal, setShowSpctModal] = useState(false);
+  const [spctProduct, setSpctProduct] = useState(null); // Sản phẩm đang thêm biến thể
+
+  const openSpctModal = (product) => {
+    setSpctProduct(product);
+    setShowSpctModal(true);
+    setSpctForm({ idMauSac: "", idKichThuoc: "", giaBan: "", soLuong: "" });
+    // Lấy danh sách biến thể
+    fetch(`http://localhost:8080/api/san-pham-chi-tiet/${product.id}`)
+      .then(res => res.json())
+      .then(data => setSpctList(Array.isArray(data) ? data : [data]))
+      .catch(() => setSpctList([]));
+  };
+  const closeSpctModal = () => {
+    setShowSpctModal(false);
+    setSpctProduct(null);
+    setSpctList([]);
   };
 
   return (
-    <div className="admin-content-page">
-      <div className="page-header">
-        <h1 className="page-title">Quản lý Sản Phẩm</h1>
-        <Button type="primary" onClick={handleAdd}>Thêm Sản Phẩm Mới</Button>
-      </div>
-      <Table dataSource={data} columns={columns} rowKey="ID" pagination={false} />
-
-      <Modal
-        title={editingItem ? "Sửa Sản Phẩm" : "Thêm Sản Phẩm"}
-        visible={isModalVisible}
-        onCancel={handleCancel}
-        footer={null}
-        width={1000}
+    <div
+      className="banhang-container"
+      style={{ flexDirection: "column", gap: 24 }}
+    >
+      {/* Thanh công cụ */}
+      <div
+        style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          marginBottom: 12,
+        }}
       >
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={onFinish}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
+        <input
+          type="text"
+          placeholder="Tìm kiếm sản phẩm..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          style={{ width: 220 }}
+        />
+        <select value={category} onChange={(e) => setCategory(e.target.value)}>
+          <option value="">Danh mục</option>
+          {categories.map((dm) => (
+            <option key={dm.id} value={dm.id}>
+              {dm.tenDanhMuc}
+            </option>
+          ))}
+        </select>
+        <select value={brand} onChange={(e) => setBrand(e.target.value)}>
+          <option value="">Thương hiệu</option>
+          {brands.map((th) => (
+            <option key={th.id} value={th.id}>
+              {th.tenThuongHieu}
+            </option>
+          ))}
+        </select>
+        <select value={material} onChange={(e) => setMaterial(e.target.value)}>
+          <option value="">Chất liệu</option>
+          {materials.map((cl) => (
+            <option key={cl.id} value={cl.id}>
+              {cl.tenChatLieu}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={() => setShowAddModal(true)}
+          style={{
+            padding: "8px 16px",
+            background: "#1976d2",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            fontWeight: 600,
+            fontSize: 15,
+            marginLeft: 8,
+          }}
         >
-          <Form.Item
-            name="MaSanPham"
-            label="Mã Sản Phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Sản Phẩm!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Mã Sản Phẩm" />
-          </Form.Item>
-          <Form.Item
-            name="TenSanPham"
-            label="Tên Sản Phẩm"
-            rules={[{ required: true, message: 'Vui lòng nhập Tên Sản Phẩm!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Tên Sản Phẩm" />
-          </Form.Item>
-          <Form.Item
-            name="ID_ThuongHieu"
-            label="Thương Hiệu"
-            rules={[{ required: true, message: 'Vui lòng chọn Thương Hiệu!' }]}
-          >
-            <Select placeholder="Chọn Thương Hiệu">
-              {thuongHieuData.map(item => (
-                <Option key={item.id} value={item.id}>{item.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="ID_XuatXu"
-            label="Xuất Xứ"
-            rules={[{ required: true, message: 'Vui lòng chọn Xuất Xứ!' }]}
-          >
-            <Select placeholder="Chọn Xuất Xứ">
-              {xuatXuData.map(item => (
-                <Option key={item.id} value={item.id}>{item.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="ID_DanhMuc"
-            label="Danh Mục"
-            rules={[{ required: true, message: 'Vui lòng chọn Danh Mục!' }]}
-          >
-            <Select placeholder="Chọn Danh Mục">
-              {danhMucData.map(item => (
-                <Option key={item.id} value={item.id}>{item.name}</Option>
-              ))}
-            </Select>
-          </Form.Item>
-          <Form.Item
-            name="TrangThai"
-            label="Trạng Thái"
-            rules={[{ required: true, message: 'Vui lòng chọn Trạng Thái!' }]}
-          >
-            <Select placeholder="Chọn Trạng Thái">
-              <Option value="Đang kinh doanh">Đang kinh doanh</Option>
-              <Option value="Ngừng kinh doanh">Ngừng kinh doanh</Option>
-            </Select>
-          </Form.Item>
+          + Thêm sản phẩm
+        </button>
+      </div>
 
-          {/* Phần thêm/sửa Chi tiết sản phẩm (ví dụ: kích thước, màu sắc, số lượng, giá) */}
-          <h3>Chi Tiết Sản Phẩm</h3>
-          <Form.List name="chiTiet">
-            {(fields, { add, remove }) => (
-              <>
-                {fields.map(({ key, name, fieldKey, ...restField }) => (
-                  <Space key={key} style={{ display: 'flex', marginBottom: 8 }} align="baseline">
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'MaSanPhamChiTiet']}
-                      fieldKey={[fieldKey, 'MaSanPhamChiTiet']}
-                      rules={[{ required: true, message: 'Missing Mã Chi Tiết SP' }]}
-                    >
-                      <Input placeholder="Mã Chi Tiết SP" />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'ID_Size']}
-                      fieldKey={[fieldKey, 'ID_Size']}
-                      rules={[{ required: true, message: 'Missing Kích Thước' }]}
-                    >
-                      <Select placeholder="Kích Thước" style={{ width: 120 }}>
-                        {kichThuocData.map(item => (
-                          <Option key={item.id} value={item.id}>{item.name}</Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'ID_MauSac']}
-                      fieldKey={[fieldKey, 'ID_MauSac']}
-                      rules={[{ required: true, message: 'Missing Màu Sắc' }]}
-                    >
-                      <Select placeholder="Màu Sắc" style={{ width: 120 }}>
-                        {mauSacData.map(item => (
-                          <Option key={item.ID} value={item.ID}>{item.TenMauSac}</Option>
-                        ))}
-                      </Select>
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'SoLuong']}
-                      fieldKey={[fieldKey, 'SoLuong']}
-                      rules={[{ required: true, message: 'Missing Số Lượng' }]}
-                    >
-                      <Input type="number" placeholder="Số Lượng" />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'GiaBan']}
-                      fieldKey={[fieldKey, 'GiaBan']}
-                      rules={[{ required: true, message: 'Missing Giá Bán' }]}
-                    >
-                      <Input type="number" placeholder="Giá Bán" />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'GiaGiamGia']}
-                      fieldKey={[fieldKey, 'GiaGiamGia']}
-                    >
-                      <Input type="number" placeholder="Giá Giảm Giá (Không bắt buộc)" />
-                    </Form.Item>
-                    <Form.Item
-                      {...restField}
-                      name={[name, 'Images']}
-                      fieldKey={[fieldKey, 'Images']}
-                      valuePropName="fileList"
-                      getValueFromEvent={(e) => {
-                        if (Array.isArray(e)) {
-                          return e;
-                        }
-                        return e && e.fileList;
+      {/* Modal thêm sản phẩm */}
+      {showAddModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Thêm sản phẩm mới</h2>
+            <form
+              onSubmit={handleAddProduct}
+              style={{ display: "flex", flexDirection: "column", gap: 12 }}
+            >
+              <Input
+                required
+                placeholder="Tên sản phẩm"
+                value={addForm.tenSanPham}
+                onChange={(e) =>
+                  setAddForm((f) => ({ ...f, tenSanPham: e.target.value }))
+                }
+              />
+              {!addForm.idDanhMuc && (
+                <span style={{ color: "red" }}>Chọn danh mục!</span>
+              )}
+              <select
+                required
+                value={addForm.idDanhMuc}
+                onChange={(e) =>
+                  setAddForm((f) => ({
+                    ...f,
+                    idDanhMuc: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">-- Chọn danh mục --</option>
+                {categories.map((dm) => (
+                  <option key={dm.id} value={dm.id}>
+                    {dm.tenDanhMuc}
+                  </option>
+                ))}
+              </select>
+              <select
+                required
+                value={addForm.idThuongHieu}
+                onChange={(e) =>
+                  setAddForm((f) => ({
+                    ...f,
+                    idThuongHieu: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn thương hiệu</option>
+                {brands.map((th) => (
+                  <option key={th.id} value={th.id}>
+                    {th.tenThuongHieu}
+                  </option>
+                ))}
+              </select>
+              <select
+                required
+                value={addForm.idChatLieu}
+                onChange={(e) =>
+                  setAddForm((f) => ({
+                    ...f,
+                    idChatLieu: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn chất liệu</option>
+                {materials.map((cl) => (
+                  <option key={cl.id} value={cl.id}>
+                    {cl.tenChatLieu}
+                  </option>
+                ))}
+              </select>
+              <select
+                required
+                value={addForm.idXuatXu}
+                onChange={(e) =>
+                  setAddForm((f) => ({
+                    ...f,
+                    idXuatXu: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn xuất xứ</option>
+                {origins.map((xx) => (
+                  <option key={xx.id} value={xx.id}>
+                    {xx.tenXuatXu}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={addForm.idKhuyenMai}
+                onChange={(e) =>
+                  setAddForm((f) => ({
+                    ...f,
+                    idKhuyenMai: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn khuyến mãi (không bắt buộc)</option>
+                {khuyenMais &&
+                  khuyenMais.map((km) => (
+                    <option key={km.id} value={km.id}>
+                      {km.tenKhuyenMai}
+                    </option>
+                  ))}
+              </select>
+              <select
+                value={addForm.trangThai}
+                onChange={(e) =>
+                  setAddForm((f) => ({ ...f, trangThai: e.target.value }))
+                }
+              >
+                <option value={1}>Đang bán</option>
+                <option value={0}>Ngừng bán</option>
+              </select>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    background: "#1976d2",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 18px",
+                    fontWeight: 600,
+                    fontSize: 15,
+                  }}
+                >
+                  {loading ? "Đang lưu..." : "Lưu"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{
+                    background: "#e53935",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 18px",
+                    fontWeight: 600,
+                    fontSize: 15,
+                  }}
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal sửa sản phẩm */}
+      {showEditModal && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>Sửa sản phẩm</h2>
+            <form
+              onSubmit={handleEditProduct}
+              style={{ display: "flex", flexDirection: "column", gap: 12 }}
+            >
+              <Input
+                required
+                placeholder="Tên sản phẩm"
+                value={editForm.tenSanPham}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, tenSanPham: e.target.value }))
+                }
+              />
+              <select
+                required
+                value={editForm.idDanhMuc}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    idDanhMuc: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn danh mục</option>
+                {categories.map((dm) => (
+                  <option key={dm.id} value={dm.id}>
+                    {dm.tenDanhMuc}
+                  </option>
+                ))}
+              </select>
+              <select
+                required
+                value={editForm.idThuongHieu}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    idThuongHieu: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn thương hiệu</option>
+                {brands.map((th) => (
+                  <option key={th.id} value={th.id}>
+                    {th.tenThuongHieu}
+                  </option>
+                ))}
+              </select>
+              <select
+                required
+                value={editForm.idChatLieu}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    idChatLieu: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn chất liệu</option>
+                {materials.map((cl) => (
+                  <option key={cl.id} value={cl.id}>
+                    {cl.tenChatLieu}
+                  </option>
+                ))}
+              </select>
+              <select
+                required
+                value={editForm.idXuatXu}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    idXuatXu: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn xuất xứ</option>
+                {origins.map((xx) => (
+                  <option key={xx.id} value={xx.id}>
+                    {xx.tenXuatXu}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={editForm.idKhuyenMai || ""}
+                onChange={(e) =>
+                  setEditForm((f) => ({
+                    ...f,
+                    idKhuyenMai: e.target.value ? Number(e.target.value) : "",
+                  }))
+                }
+              >
+                <option value="">Chọn khuyến mãi (không bắt buộc)</option>
+                {khuyenMais &&
+                  khuyenMais.map((km) => (
+                    <option key={km.id} value={km.id}>
+                      {km.tenKhuyenMai}
+                    </option>
+                  ))}
+              </select>
+              <select
+                value={editForm.trangThai}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, trangThai: e.target.value }))
+                }
+              >
+                <option value={1}>Đang bán</option>
+                <option value={0}>Ngừng bán</option>
+              </select>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    background: "#1976d2",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 18px",
+                    fontWeight: 600,
+                    fontSize: 15,
+                  }}
+                >
+                  {loading ? "Đang lưu..." : "Lưu"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowEditModal(false)}
+                  style={{
+                    background: "#e53935",
+                    color: "#fff",
+                    border: "none",
+                    borderRadius: 6,
+                    padding: "8px 18px",
+                    fontWeight: 600,
+                    fontSize: 15,
+                  }}
+                >
+                  Hủy
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sau khi thêm sản phẩm thành công, nếu có lastAddedProductId thì hiển thị form thêm sản phẩm chi tiết */}
+      {lastAddedProductId && (
+        <div style={{ margin: "32px 0", padding: 16, background: "#f8f9fa", borderRadius: 8 }}>
+          <h3>Thêm sản phẩm chi tiết cho sản phẩm vừa tạo</h3>
+          <form onSubmit={handleAddSpct} style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+            <select required value={spctForm.idMauSac} onChange={e => setSpctForm(f => ({ ...f, idMauSac: e.target.value }))}>
+              <option value="">Chọn màu sắc</option>
+              {mauSacs.map(ms => <option key={ms.id} value={ms.id}>{ms.tenMauSac}</option>)}
+            </select>
+            <select required value={spctForm.idKichThuoc} onChange={e => setSpctForm(f => ({ ...f, idKichThuoc: e.target.value }))}>
+              <option value="">Chọn kích thước</option>
+              {kichThuocs.map(kt => <option key={kt.id} value={kt.id}>{kt.tenKichThuoc}</option>)}
+            </select>
+            <input type="number" required placeholder="Giá bán" value={spctForm.giaBan} onChange={e => setSpctForm(f => ({ ...f, giaBan: e.target.value }))} />
+            <input type="number" required placeholder="Số lượng" value={spctForm.soLuong} onChange={e => setSpctForm(f => ({ ...f, soLuong: e.target.value }))} />
+            <button type="submit" style={{ background: "#1976d2", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15 }}>Thêm biến thể</button>
+          </form>
+          <h4 style={{ marginTop: 24 }}>Danh sách sản phẩm chi tiết đã thêm</h4>
+          <table className="cart-table" style={{ minWidth: 600, background: "#fff" }}>
+            <thead>
+              <tr>
+                <th>Màu sắc</th>
+                <th>Kích thước</th>
+                <th>Giá bán</th>
+                <th>Số lượng</th>
+              </tr>
+            </thead>
+            <tbody>
+              {spctList.length === 0 ? (
+                <tr><td colSpan={5}>Chưa có biến thể nào</td></tr>
+              ) : (
+                spctList.map(ct => (
+                  <tr key={ct.id}>
+                    <td>{ct.mauSac?.tenMauSac || '-'}</td>
+                    <td>{ct.kichThuoc?.tenKichThuoc || '-'}</td>
+                    <td>{ct.giaBan?.toLocaleString() || '-'}</td>
+                    <td>{ct.soLuong ?? '-'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Bảng danh sách sản phẩm */}
+      <div style={{ overflowX: "auto" }}>
+        <table
+          className="cart-table"
+          style={{ minWidth: 1000, background: "#fff" }}
+        >
+          <thead>
+            <tr>
+              <th>Ảnh</th>
+              <th>Tên sản phẩm</th>
+              <th>Danh mục</th>
+              <th>Thương hiệu</th>
+              <th>Chất liệu</th>
+              <th>Xuất xứ</th>
+              <th>Khuyến mãi</th>
+              <th>Trạng thái</th>
+              <th>Hành động</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredProducts.map((product) => (
+              <React.Fragment key={product.id}>
+                <tr>
+                  <td>
+                    <img
+                      src={product.imanges || "https://via.placeholder.com/50"}
+                      style={{ width: 40, height: 40, borderRadius: 6 }}
+                    />
+                  </td>
+                  <td>{product.tenSanPham}</td>
+                  <td>{product.danhMuc?.tenDanhMuc || "-"}</td>
+                  <td>{product.thuongHieu?.tenThuongHieu || "-"}</td>
+                  <td>{product.chatLieu?.tenChatLieu || "-"}</td>
+                  <td>{product.xuatXu?.tenXuatXu || "-"}</td>
+                  <td>{product.khuyenMai?.tenKhuyenMai || "-"}</td>
+                  <td>{product.trangThai === 1 ? "Đang bán" : "Ngừng bán"}</td>
+                  <td>
+                    <button
+                      onClick={() => openEditModal(product)}
+                      style={{
+                        background: "#43a047",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 10px",
+                        marginRight: 4,
+                        cursor: "pointer",
+                        opacity: 0.7,
                       }}
                     >
-                      <Upload {...props} listType="picture-card">
-                        <Button icon={<UploadOutlined />}>Upload Ảnh</Button>
-                      </Upload>
-                    </Form.Item>
-                    <Button type="danger" onClick={() => remove(name)}>Xóa</Button>
-                  </Space>
-                ))}
-                <Form.Item>
-                  <Button type="dashed" onClick={() => add()} block icon={<ShoppingOutlined />}>
-                    Thêm Chi Tiết Sản Phẩm
-                  </Button>
-                </Form.Item>
-              </>
+                      Sửa
+                    </button>
+                    <button
+                      style={{
+                        background: "#e53935",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 10px",
+                        marginRight: 4,
+                        cursor: "pointer",
+                        opacity: 0.7,
+                      }}
+                    >
+                      Xóa
+                    </button>
+                    <button
+                      onClick={() => openChiTietModal(product)}
+                      style={{
+                        background: "#1976d2",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                        opacity: 0.7,
+                      }}
+                    >
+                      Chi tiết
+                    </button>
+                    <button
+                      onClick={() => openSpctModal(product)}
+                      style={{
+                        background: "#ff9800",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 4,
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                        opacity: 0.7,
+                      }}
+                    >
+                      Thêm biến thể
+                    </button>
+                  </td>
+                </tr>
+              </React.Fragment>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal thêm biến thể sản phẩm */}
+      {showSpctModal && spctProduct && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Thêm biến thể cho: {spctProduct.tenSanPham}</h3>
+            <form onSubmit={handleAddSpct} style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <select required value={spctForm.idMauSac} onChange={e => setSpctForm(f => ({ ...f, idMauSac: e.target.value }))}>
+                <option value="">Chọn màu sắc</option>
+                {mauSacs.map(ms => <option key={ms.id} value={ms.id}>{ms.tenMauSac}</option>)}
+              </select>
+              <select required value={spctForm.idKichThuoc} onChange={e => setSpctForm(f => ({ ...f, idKichThuoc: e.target.value }))}>
+                <option value="">Chọn kích thước</option>
+                {kichThuocs.map(kt => <option key={kt.id} value={kt.id}>{kt.tenKichThuoc}</option>)}
+              </select>
+              <input type="number" required placeholder="Giá bán" value={spctForm.giaBan} onChange={e => setSpctForm(f => ({ ...f, giaBan: e.target.value }))} />
+              <input type="number" required placeholder="Số lượng" value={spctForm.soLuong} onChange={e => setSpctForm(f => ({ ...f, soLuong: e.target.value }))} />
+              <button type="submit" style={{ background: "#1976d2", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15 }}>Thêm biến thể</button>
+              <button type="button" onClick={closeSpctModal} style={{ background: "#e53935", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15 }}>Đóng</button>
+            </form>
+            <h4 style={{ marginTop: 24 }}>Danh sách biến thể đã thêm</h4>
+            <table className="cart-table" style={{ minWidth: 600, background: "#fff" }}>
+              <thead>
+                <tr>
+                  <th>Màu sắc</th>
+                  <th>Kích thước</th>
+                  <th>Giá bán</th>
+                  <th>Số lượng</th>
+                </tr>
+              </thead>
+              <tbody>
+                {spctList.length === 0 ? (
+                  <tr><td colSpan={5}>Chưa có biến thể nào</td></tr>
+                ) : (
+                  spctList.map(ct => (
+                    <tr key={ct.id}>
+                      <td>{ct.mauSac?.tenMauSac || '-'}</td>
+                      <td>{ct.kichThuoc?.tenKichThuoc || '-'}</td>
+                      <td>{ct.giaBan?.toLocaleString() || '-'}</td>
+                      <td>{ct.soLuong ?? '-'}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Modal chi tiết sản phẩm */}
+      {showChiTietModal && chiTietProduct && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Danh sách sản phẩm chi tiết của: {chiTietProduct.tenSanPham}</h3>
+            {loadingChiTiet ? (
+              <div>Đang tải...</div>
+            ) : (
+              <table className="cart-table" style={{ minWidth: 600, background: "#fff" }}>
+                <thead>
+                  <tr>
+                    <th>Màu sắc</th>
+                    <th>Kích thước</th>
+                    <th>Giá bán</th>
+                    <th>Số lượng</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chiTietList.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>Chưa có biến thể nào</td>
+                    </tr>
+                  ) : (
+                    chiTietList.map((ct) => (
+                      <tr key={ct.id}>
+                        <td>{ct.mauSac?.tenMauSac || "-"}</td>
+                        <td>{ct.kichThuoc?.tenKichThuoc || "-"}</td>
+                        <td>{ct.giaBan?.toLocaleString() || "-"}</td>
+                        <td>{ct.soLuong ?? "-"}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             )}
-          </Form.List>
-
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              {editingItem ? "Cập Nhật" : "Thêm Mới"}
-            </Button>
-            <Button onClick={handleCancel} style={{ marginLeft: 8 }}>
-              Hủy
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
-
-      {/* Modal thêm màu sắc nhanh */}
-      <Modal
-        title="Thêm Màu Sắc Mới"
-        visible={isAddMauSacModalVisible}
-        onCancel={() => {
-          setIsAddMauSacModalVisible(false);
-          addMauSacForm.resetFields();
-        }}
-        footer={null}
-      >
-        <Form
-          form={addMauSacForm}
-          layout="vertical"
-          onFinish={handleAddMauSac}
-          initialValues={{ TrangThai: 'Đang hoạt động' }}
-        >
-          <Form.Item
-            name="MaMauSac"
-            label="Mã Màu Sắc"
-            rules={[{ required: true, message: 'Vui lòng nhập Mã Màu Sắc!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Mã Màu Sắc" />
-          </Form.Item>
-          <Form.Item
-            name="TenMauSac"
-            label="Tên Màu Sắc"
-            rules={[{ required: true, message: 'Vui lòng nhập Tên Màu Sắc!' }]}
-          >
-            <Input prefix={<TagOutlined />} placeholder="Tên Màu Sắc" />
-          </Form.Item>
-          <Form.Item>
-            <Button type="primary" htmlType="submit">
-              Thêm Màu Mới
-            </Button>
-            <Button onClick={() => {
-              setIsAddMauSacModalVisible(false);
-              addMauSacForm.resetFields();
-            }} style={{ marginLeft: 8 }}>
-              Hủy
-            </Button>
-          </Form.Item>
-        </Form>
-      </Modal>
+            <button type="button" onClick={closeChiTietModal} style={{ background: "#e53935", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15, marginTop: 16 }}>Đóng</button>
+          </div>
+        </div>
+      )}
     </div>
   );
-} 
+};
+
+export default SanPhamPage;
