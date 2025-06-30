@@ -57,11 +57,40 @@ const BanHangTaiQuayPage = () => {
   const ROWS_SHOWN = 2;
   const MAX_PRODUCTS_SHOWN = PRODUCTS_PER_ROW * ROWS_SHOWN;
 
-  // Demo khách hàng
-  const customers = [
-    { id: 1, name: 'Nguyễn Văn A' },
-    { id: 2, name: 'Khách lẻ' },
-  ];
+
+
+  // State cho thông tin khách hàng và voucher
+  const [customerName, setCustomerName] = useState('');
+  const [customerEmail, setCustomerEmail] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+
+
+  // State cho danh sách voucher và voucher đã chọn
+  const [vouchers, setVouchers] = useState([]);
+  const [selectedVoucherId, setSelectedVoucherId] = useState("");
+
+  // State cho danh sách khách hàng và khách hàng đã chọn
+  const [customers, setCustomers] = useState([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState('');
+
+  // State cho modal thanh toán
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState('TIEN_MAT');
+
+  // Load danh sách voucher khi mount
+  useEffect(() => {
+    fetch('http://localhost:8080/api/voucher')
+      .then(res => res.json())
+      .then(data => setVouchers(data || []));
+  }, []);
+
+  // Load danh sách khách hàng khi mount
+  useEffect(() => {
+    fetch('http://localhost:8080/api/khachhang')
+      .then(res => res.json())
+      .then(data => setCustomers(data || []));
+  }, []);
 
   // Fetch sản phẩm từ API
   useEffect(() => {
@@ -244,7 +273,7 @@ const BanHangTaiQuayPage = () => {
       const res = await fetch('http://localhost:8080/api/donhang/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ loaiDonHang: 'Bán hàng tại quầy', trangThai: 0 }),
       });
       if (!res.ok) throw new Error('Lỗi khi tạo hóa đơn');
       const data = await res.json();
@@ -262,7 +291,7 @@ const BanHangTaiQuayPage = () => {
     setOrdersLoading(true);
     setOrdersError('');
     try {
-      const res = await fetch('http://localhost:8080/api/donhang');
+      const res = await fetch('http://localhost:8080/api/donhang/chuahoanthanh');
       if (!res.ok) throw new Error('Lỗi khi lấy danh sách hóa đơn');
       const data = await res.json();
       setOrders(Array.isArray(data) ? data : []);
@@ -287,6 +316,77 @@ const BanHangTaiQuayPage = () => {
     console.log('filteredProducts:', filteredProducts);
     console.log('loading:', loading, 'error:', error);
   }, [products, filteredProducts, loading, error]);
+
+  // Hàm thêm khách hàng và tạo hóa đơn mới
+  const addCustomerAndCreateOrder = async (e) => {
+    if (e) e.stopPropagation();
+    // Nếu tất cả các trường đều rỗng => khách lẻ
+    if (!customerName && !customerEmail && !customerPhone) {
+      // Tạo hóa đơn không có idKhachHang (khách lẻ)
+      handleCreateOrder();
+      return;
+    }
+    // Nếu đã nhập thông tin khách hàng (ít nhất 1 trường)
+    const customerBody = {
+      tenKhachHang: customerName,
+      email: customerEmail,
+      ngaySinh: "",
+      gioiTinh: "",
+      diaChi: "",
+      soDienThoai: customerPhone,
+      trangThai: "",
+      maThongBao: null,
+      thoiGianThongBao: null
+    };
+    try {
+      const res = await fetch('http://localhost:8080/api/khachhang/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(customerBody)
+      });
+      if (!res.ok) throw new Error('Lỗi khi thêm khách hàng!');
+      const customer = await res.json();
+      const customerId = customer.id;
+      // Tạo hóa đơn với idKhachHang
+      setOrderLoading(true);
+      setOrderError('');
+      const resOrder = await fetch('http://localhost:8080/api/donhang/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idKhachHang: customerId, loaiDonHang: 'Bán hàng tại quầy', trangThai: 0 })
+      });
+      if (!resOrder.ok) throw new Error('Lỗi khi tạo hóa đơn!');
+      const order = await resOrder.json();
+      setOrderId(order.id);
+      await fetchOrders();
+    } catch (err) {
+      setOrderError(err.message || 'Lỗi không xác định');
+    } finally {
+      setOrderLoading(false);
+    }
+  };
+
+  // Reset form thông tin khách hàng và voucher khi chọn hóa đơn khác hoặc tạo mới
+  useEffect(() => {
+    setCustomerName('');
+    setCustomerEmail('');
+    setCustomerPhone('');
+    setSelectedVoucherId('');
+  }, [orderId]);
+
+  // Hàm mở modal thanh toán
+  const handleOpenPaymentModal = () => {
+    setPaymentAmount(0);
+    setPaymentMethod('TIEN_MAT');
+    setShowPaymentModal(true);
+  };
+
+  // Hàm xác nhận thanh toán (chỉ xử lý frontend)
+  const handleConfirmPayment = () => {
+    setShowPaymentModal(false);
+    alert('Thanh toán thành công!');
+    // TODO: reset form nếu muốn
+  };
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f6f8fa' }}>
@@ -417,7 +517,7 @@ const BanHangTaiQuayPage = () => {
                     marginLeft: 12,
                     boxShadow: '0 2px 8px rgba(25,118,210,0.08)'
                   }}
-                  onClick={e => { e.stopPropagation(); handleCreateOrder(); }}
+                  onClick={addCustomerAndCreateOrder}
                 >
                   + Tạo hóa đơn
                 </button>
@@ -485,6 +585,73 @@ const BanHangTaiQuayPage = () => {
             </div>
             {/* Nội dung hóa đơn tạm, có hiệu ứng thu gọn/mở rộng */}
             <div style={{ maxHeight: collapsedCart ? 0 : 600, overflow: 'hidden', transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)', padding: collapsedCart ? 0 : '0 24px 24px 24px' }}>
+              <div style={{
+                background: '#f6f8fa',
+                borderRadius: 12,
+                padding: 16,
+                marginBottom: 8,
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 16,
+                alignItems: 'center',
+              }}>
+                {/* Dropdown chọn khách hàng */}
+                <select
+                  value={selectedCustomerId}
+                  onChange={e => {
+                    setSelectedCustomerId(e.target.value);
+                    const kh = customers.find(c => c.id === Number(e.target.value));
+                    if (kh) {
+                      setCustomerName(kh.tenKhachHang || '');
+                      setCustomerEmail(kh.email || '');
+                      setCustomerPhone(kh.soDienThoai || '');
+                    } else {
+                      setCustomerName('');
+                      setCustomerEmail('');
+                      setCustomerPhone('');
+                    }
+                  }}
+                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
+                >
+                  <option value=''>-- Chọn khách hàng --</option>
+                  {customers.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.tenKhachHang} ({c.soDienThoai})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  placeholder="Họ tên khách hàng"
+                  value={customerName}
+                  onChange={e => setCustomerName(e.target.value)}
+                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={customerEmail}
+                  onChange={e => setCustomerEmail(e.target.value)}
+                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                />
+                <input
+                  type="tel"
+                  placeholder="Số điện thoại"
+                  value={customerPhone}
+                  onChange={e => setCustomerPhone(e.target.value)}
+                  style={{ flex: '1 1 140px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                />
+                <select
+                  value={selectedVoucherId || ''}
+                  onChange={e => setSelectedVoucherId(e.target.value)}
+                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
+                >
+                  <option value="">-- Chọn voucher --</option>
+                  {vouchers.map(v => (
+                    <option key={v.id} value={v.id}>{v.tenVoucher}</option>
+                  ))}
+                </select>
+              </div>
               <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
                 <thead>
                   <tr style={{ background: '#e3f0ff' }}>
@@ -520,6 +687,26 @@ const BanHangTaiQuayPage = () => {
               </table>
               <div style={{ textAlign: 'right', marginTop: 12, fontWeight: 700, fontSize: 18, color: '#1976d2' }}>
                 Tổng tiền: {total.toLocaleString()} đ
+              </div>
+              {/* Nút thanh toán */}
+              <div style={{ textAlign: 'right', margin: '8px 24px 0 0' }}>
+                <button
+                  style={{
+                    background: '#43b244',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '10px 28px',
+                    fontWeight: 700,
+                    fontSize: 18,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 8px rgba(67,178,68,0.08)'
+                  }}
+                  onClick={handleOpenPaymentModal}
+                  disabled={!orderId}
+                >
+                  Thanh toán
+                </button>
               </div>
             </div>
           </div>
@@ -628,6 +815,103 @@ const BanHangTaiQuayPage = () => {
               </button>
             </div>
             {editError && <div style={{ color: 'red', marginTop: 12 }}>{editError}</div>}
+          </div>
+        </div>
+      )}
+      {/* Modal thanh toán */}
+      {showPaymentModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: 'rgba(0,0,0,0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+        }}>
+          <div style={{
+            background: '#fff',
+            borderRadius: 12,
+            padding: 32,
+            minWidth: 420,
+            boxShadow: '0 8px 32px rgba(25,118,210,0.18)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: 18
+          }}>
+            <h2 style={{margin: 0, marginBottom: 12}}>Thanh toán</h2>
+            <div style={{marginBottom: 8, width: '100%'}}>
+              <b>Số tiền cần thanh toán:</b> <span style={{color: '#1976d2', fontSize: 18, fontWeight: 700}}>{total.toLocaleString()} đ</span>
+            </div>
+            <div style={{marginBottom: 8, width: '100%'}}>
+              <label><b>Số tiền khách đưa:</b></label><br/>
+              <input
+                type="number"
+                min={0}
+                value={paymentAmount}
+                onChange={e => setPaymentAmount(Number(e.target.value))}
+                style={{fontSize: 18, padding: 8, width: 200, borderRadius: 6, border: '1px solid #1976d2'}}
+              />
+            </div>
+            <div style={{marginBottom: 8, width: '100%'}}>
+              <b>Phương thức thanh toán:</b>
+              <div style={{display: 'flex', gap: 12, marginTop: 6}}>
+                <button
+                  style={{
+                    background: paymentMethod === 'TIEN_MAT' ? '#1976d2' : '#fff',
+                    color: paymentMethod === 'TIEN_MAT' ? '#fff' : '#1976d2',
+                    border: '1px solid #1976d2',
+                    borderRadius: 8,
+                    padding: '6px 18px',
+                    fontWeight: 600,
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onClick={() => setPaymentMethod('TIEN_MAT')}
+                >Tiền mặt</button>
+                <button
+                  style={{
+                    background: paymentMethod === 'CHUYEN_KHOAN' ? '#1976d2' : '#fff',
+                    color: paymentMethod === 'CHUYEN_KHOAN' ? '#fff' : '#1976d2',
+                    border: '1px solid #1976d2',
+                    borderRadius: 8,
+                    padding: '6px 18px',
+                    fontWeight: 600,
+                    fontSize: 15,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                  onClick={() => setPaymentMethod('CHUYEN_KHOAN')}
+                >Chuyển khoản</button>
+              </div>
+            </div>
+            <div style={{marginBottom: 8, width: '100%'}}>
+              {paymentAmount < total ? (
+                <span style={{color: 'red'}}>Khách thanh toán thiếu: {(total - paymentAmount).toLocaleString()} đ</span>
+              ) : (
+                <span style={{color: '#43b244'}}>Tiền thừa trả khách: {(paymentAmount - total).toLocaleString()} đ</span>
+              )}
+            </div>
+            <div style={{display: 'flex', gap: 16, marginTop: 12}}>
+              <button
+                onClick={handleConfirmPayment}
+                style={{background: '#43b244', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 700, fontSize: 16, cursor: 'pointer'}}
+                disabled={paymentAmount < total}
+              >
+                Xác nhận thanh toán
+              </button>
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                style={{background: '#eee', color: '#1976d2', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 700, fontSize: 16, cursor: 'pointer'}}
+              >
+                Đóng
+              </button>
+            </div>
           </div>
         </div>
       )}
