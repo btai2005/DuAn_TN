@@ -14,6 +14,7 @@ import AdminPanel from './admin/AdminPanel';
 import BlogPage from './pages/BlogPage';
 import ContactPage from './pages/ContactPage';
 import Wishlist from './pages/Wishlist';
+import BanHangTaiQuayPage from './admin/BanHangTaiQuayPage';
 import './styles/App.css';
 
 function App() {
@@ -36,6 +37,7 @@ function App() {
           <Route path="/wishlist" element={<Wishlist />} />
         </Route>
         <Route path="/admin-panel/*" element={<AdminPanel />} />
+        <Route path="/ban-hang-tai-quay" element={<BanHangTaiQuayPage />} />
       </Routes>
     </Router>
   );
