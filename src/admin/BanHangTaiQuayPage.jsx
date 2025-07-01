@@ -78,6 +78,12 @@ const BanHangTaiQuayPage = () => {
   const [paymentAmount, setPaymentAmount] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState('TIEN_MAT');
 
+  // Thêm state cho thông báo voucher
+  const [voucherMessage, setVoucherMessage] = useState('');
+
+  // Thêm state cho thông báo khách hàng
+  const [customerMessage, setCustomerMessage] = useState('');
+
   // Load danh sách voucher khi mount
   useEffect(() => {
     fetch('http://localhost:8080/api/voucher')
@@ -381,12 +387,116 @@ const BanHangTaiQuayPage = () => {
     setShowPaymentModal(true);
   };
 
-  // Hàm xác nhận thanh toán (chỉ xử lý frontend)
-  const handleConfirmPayment = () => {
-    setShowPaymentModal(false);
-    alert('Thanh toán thành công!');
-    // TODO: reset form nếu muốn
+  // Hàm xác nhận thanh toán (gọi API cập nhật tổng tiền và trạng thái)
+  const handleConfirmPayment = async () => {
+    if (!orderId) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/xacnhanthanhtoan/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tongTien: total })
+      });
+      if (!res.ok) throw new Error('Lỗi khi xác nhận thanh toán');
+      setShowPaymentModal(false);
+      alert('Thanh toán thành công!');
+      await fetchOrders();
+      // TODO: reset form nếu muốn
+    } catch (err) {
+      alert(err.message || 'Lỗi khi xác nhận thanh toán!');
+    }
   };
+
+  // Khi orderId thay đổi, fetch lại thông tin đơn hàng để set lại selectedVoucherId và selectedCustomerId
+  useEffect(() => {
+    if (!orderId) return;
+    fetch(`http://localhost:8080/api/donhang/${orderId}`)
+      .then(res => res.json())
+      .then(data => {
+        setSelectedVoucherId(data.idgiamGia || '');
+        setSelectedCustomerId(data.idkhachHang || '');
+        // Lấy thông tin khách hàng từ danh sách customers
+        const kh = customers.find(c => c.id === Number(data.idkhachHang));
+        if (kh) {
+          setCustomerName(kh.tenKhachHang || '');
+          setCustomerEmail(kh.email || '');
+          setCustomerPhone(kh.soDienThoai || '');
+        } else {
+          setCustomerName('');
+          setCustomerEmail('');
+          setCustomerPhone('');
+        }
+      });
+  }, [orderId, customers]);
+
+  // Thay thế hàm chọn voucher
+  const handleVoucherChange = async (e) => {
+    const voucherId = e.target.value;
+    setSelectedVoucherId(voucherId);
+    setVoucherMessage('');
+
+    if (!orderId) return;
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/update-voucher/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idgiamGia: voucherId ? Number(voucherId) : null })
+      });
+      if (!res.ok) throw new Error('Lỗi khi cập nhật voucher cho hóa đơn');
+      setVoucherMessage(voucherId ? 'Áp dụng voucher thành công!' : 'Đã bỏ chọn voucher!');
+    } catch (err) {
+      setVoucherMessage(err.message || 'Lỗi khi áp dụng voucher!');
+    }
+  };
+
+  // Hàm xử lý khi chọn khách hàng
+  const handleCustomerChange = async (e) => {
+    const customerId = e.target.value;
+    setSelectedCustomerId(customerId);
+    setCustomerMessage('');
+
+    // Cập nhật thông tin form
+    const kh = customers.find(c => c.id === Number(customerId));
+    if (kh) {
+      setCustomerName(kh.tenKhachHang || '');
+      setCustomerEmail(kh.email || '');
+      setCustomerPhone(kh.soDienThoai || '');
+    } else {
+      setCustomerName('');
+      setCustomerEmail('');
+      setCustomerPhone('');
+    }
+
+    if (!orderId) return;
+
+    try {
+      const res = await fetch(`http://localhost:8080/api/update-khachhang/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idkhachHang: customerId ? Number(customerId) : null })
+      });
+      if (!res.ok) throw new Error('Lỗi khi cập nhật khách hàng cho hóa đơn');
+      setCustomerMessage(customerId ? 'Chọn khách hàng thành công!' : 'Đã chuyển về khách lẻ!');
+    } catch (err) {
+      setCustomerMessage(err.message || 'Lỗi khi cập nhật khách hàng!');
+    }
+  };
+
+  // Tự động ẩn thông báo voucher sau 2.5 giây
+  useEffect(() => {
+    if (voucherMessage) {
+      const timer = setTimeout(() => setVoucherMessage(''), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [voucherMessage]);
+
+  // Tự động ẩn thông báo khách hàng sau 2.5 giây
+  useEffect(() => {
+    if (customerMessage) {
+      const timer = setTimeout(() => setCustomerMessage(''), 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [customerMessage]);
 
   return (
     <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: '#f6f8fa' }}>
@@ -439,10 +549,14 @@ const BanHangTaiQuayPage = () => {
                 <tr key={product.id} style={{ borderBottom: '1px solid #e3e8ee', fontSize: 16 }}>
                   <td style={{ textAlign: 'center', padding: 8 }}>
                     <img
-                      src={product.image || '/logo192.png'}
+                      src={product.images ? `http://localhost:8080/images/${product.images.split(',')[0]}` : '/logo192.png'}
                       alt={product.tenSanPham}
-                      style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, background: '#f6f8fa' }}
-                      onError={e => e.target.src = '/logo192.png'}
+                      style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, background: '#f6f8fa' }}
+                      onError={e => {
+                        if (!e.target.src.includes('logo192.png')) {
+                          e.target.src = '/logo192.png';
+                        }
+                      }}
                     />
                   </td>
                   <td style={{ fontWeight: 600, padding: 8 }}>{product.tenSanPham}</td>
@@ -549,6 +663,7 @@ const BanHangTaiQuayPage = () => {
                         <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Ngày tạo</th>
                         <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Tổng tiền</th>
                         <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Khách</th>
+                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Trạng thái</th>
                         <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}></th>
                       </tr>
                     </thead>
@@ -563,6 +678,48 @@ const BanHangTaiQuayPage = () => {
                           <td style={{ padding: 8, textAlign: 'center' }}>{order.ngayTao || ''}</td>
                           <td style={{ padding: 8, textAlign: 'right', fontWeight: 500 }}>{order.tongTien?.toLocaleString() || 0} đ</td>
                           <td style={{ padding: 8, textAlign: 'center' }}>{order.idkhachHang ? `#${order.idkhachHang}` : ''}</td>
+                          <td style={{ padding: 8, textAlign: 'center', minWidth: 110 }}>
+                            {order.trangThai === 0 ? (
+                              <span style={{
+                                background: '#ff9800',
+                                color: '#fff',
+                                borderRadius: 12,
+                                padding: '2px 14px',
+                                fontWeight: 600,
+                                fontSize: 13,
+                                display: 'inline-block',
+                                minWidth: 90,
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap'
+                              }}>Chờ thanh toán</span>
+                            ) : order.trangThai === 1 ? (
+                              <span style={{
+                                background: '#43b244',
+                                color: '#fff',
+                                borderRadius: 12,
+                                padding: '2px 14px',
+                                fontWeight: 600,
+                                fontSize: 13,
+                                display: 'inline-block',
+                                minWidth: 90,
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap'
+                              }}>Đã thanh toán</span>
+                            ) : (
+                              <span style={{
+                                background: '#888',
+                                color: '#fff',
+                                borderRadius: 12,
+                                padding: '2px 14px',
+                                fontWeight: 600,
+                                fontSize: 13,
+                                display: 'inline-block',
+                                minWidth: 90,
+                                textAlign: 'center',
+                                whiteSpace: 'nowrap'
+                              }}>{order.trangThai}</span>
+                            )}
+                          </td>
                           <td style={{ padding: 8, textAlign: 'center' }}>
                             <button className="btn blue" style={{ fontWeight: 600, borderRadius: 8, padding: '4px 12px', background: orderId === order.id ? '#1976d2' : '#fff', color: orderId === order.id ? '#fff' : '#1976d2', border: '1px solid #1976d2', transition: 'all 0.2s' }} disabled={orderId === order.id}>
                               {orderId === order.id ? 'Đang thao tác' : 'Chọn'}
@@ -584,129 +741,129 @@ const BanHangTaiQuayPage = () => {
               <span style={{ fontSize: 22, color: '#1976d2', transition: 'transform 0.2s', transform: collapsedCart ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
             </div>
             {/* Nội dung hóa đơn tạm, có hiệu ứng thu gọn/mở rộng */}
-            <div style={{ maxHeight: collapsedCart ? 0 : 600, overflow: 'hidden', transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)', padding: collapsedCart ? 0 : '0 24px 24px 24px' }}>
-              <div style={{
-                background: '#f6f8fa',
-                borderRadius: 12,
-                padding: 16,
-                marginBottom: 8,
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: 16,
-                alignItems: 'center',
-              }}>
-                {/* Dropdown chọn khách hàng */}
-                <select
-                  value={selectedCustomerId}
-                  onChange={e => {
-                    setSelectedCustomerId(e.target.value);
-                    const kh = customers.find(c => c.id === Number(e.target.value));
-                    if (kh) {
-                      setCustomerName(kh.tenKhachHang || '');
-                      setCustomerEmail(kh.email || '');
-                      setCustomerPhone(kh.soDienThoai || '');
-                    } else {
-                      setCustomerName('');
-                      setCustomerEmail('');
-                      setCustomerPhone('');
-                    }
-                  }}
-                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
-                >
-                  <option value=''>-- Chọn khách hàng --</option>
-                  {customers.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.tenKhachHang} ({c.soDienThoai})
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  placeholder="Họ tên khách hàng"
-                  value={customerName}
-                  onChange={e => setCustomerName(e.target.value)}
-                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
-                />
-                <input
-                  type="email"
-                  placeholder="Email"
-                  value={customerEmail}
-                  onChange={e => setCustomerEmail(e.target.value)}
-                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
-                />
-                <input
-                  type="tel"
-                  placeholder="Số điện thoại"
-                  value={customerPhone}
-                  onChange={e => setCustomerPhone(e.target.value)}
-                  style={{ flex: '1 1 140px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
-                />
-                <select
-                  value={selectedVoucherId || ''}
-                  onChange={e => setSelectedVoucherId(e.target.value)}
-                  style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
-                >
-                  <option value="">-- Chọn voucher --</option>
-                  {vouchers.map(v => (
-                    <option key={v.id} value={v.id}>{v.tenVoucher}</option>
-                  ))}
-                </select>
-              </div>
-              <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                <thead>
-                  <tr style={{ background: '#e3f0ff' }}>
-                    <th>Tên</th>
-                    <th>Màu</th>
-                    <th>Size</th>
-                    <th>Giá</th>
-                    <th>SL</th>
-                    <th>Thành tiền</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cart.length === 0 ? (
-                    <tr><td colSpan={7} style={{ textAlign: 'center', color: '#888' }}>Chưa có sản phẩm nào</td></tr>
-                  ) : (
-                    cart.map((item, idx) => (
-                      <tr key={idx}>
-                        <td>{item.tenSanPham}</td>
-                        <td>{item.mauSac}</td>
-                        <td>{item.kichThuoc}</td>
-                        <td>{item.giaBan?.toLocaleString()}</td>
-                        <td>{item.quantity}</td>
-                        <td>{(item.giaBan * item.quantity).toLocaleString()}</td>
-                        <td style={{ display: 'flex', gap: 8 }}>
-                          <button className="btn" style={{ background: '#1976d2', color: '#fff', fontWeight: 600 }} onClick={() => handleShowEditModal(idx)}>Sửa</button>
-                          <button className="btn red" onClick={() => handleRemoveFromCart(idx)}>Xóa</button>
-                        </td>
-                      </tr>
-                    ))
+            <div style={{ maxHeight: collapsedCart ? 0 : 600, overflow: 'hidden', transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)', padding: collapsedCart ? 0 : '0 24px 24px 24px', display: 'flex', flexDirection: 'column', height: 600 }}>
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                <div style={{
+                  background: '#f6f8fa',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 8,
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 16,
+                  alignItems: 'center',
+                }}>
+                  {/* Dropdown chọn khách hàng */}
+                  <select
+                    value={selectedCustomerId || ''}
+                    onChange={handleCustomerChange}
+                    style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
+                  >
+                    <option value=''>-- Chọn khách hàng --</option>
+                    {customers.map(c => (
+                      <option key={c.id} value={c.id}>
+                        {c.tenKhachHang} ({c.soDienThoai})
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="Họ tên khách hàng"
+                    value={customerName}
+                    onChange={e => setCustomerName(e.target.value)}
+                    style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                  />
+                  <input
+                    type="email"
+                    placeholder="Email"
+                    value={customerEmail}
+                    onChange={e => setCustomerEmail(e.target.value)}
+                    style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                  />
+                  <input
+                    type="tel"
+                    placeholder="Số điện thoại"
+                    value={customerPhone}
+                    onChange={e => setCustomerPhone(e.target.value)}
+                    style={{ flex: '1 1 140px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                  />
+                  <select
+                    value={selectedVoucherId || ''}
+                    onChange={handleVoucherChange}
+                    style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
+                  >
+                    <option value="">-- Chọn voucher --</option>
+                    {vouchers.map(v => (
+                      <option key={v.id} value={v.id}>{v.tenVoucher}</option>
+                    ))}
+                  </select>
+                  {voucherMessage && (
+                    <div style={{ color: voucherMessage.includes('thành công') ? '#43b244' : 'red', marginTop: 4, fontWeight: 500 }}>
+                      {voucherMessage}
+                    </div>
                   )}
-                </tbody>
-              </table>
-              <div style={{ textAlign: 'right', marginTop: 12, fontWeight: 700, fontSize: 18, color: '#1976d2' }}>
-                Tổng tiền: {total.toLocaleString()} đ
-              </div>
-              {/* Nút thanh toán */}
-              <div style={{ textAlign: 'right', margin: '8px 24px 0 0' }}>
-                <button
-                  style={{
-                    background: '#43b244',
-                    color: '#fff',
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '10px 28px',
-                    fontWeight: 700,
-                    fontSize: 18,
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 8px rgba(67,178,68,0.08)'
-                  }}
-                  onClick={handleOpenPaymentModal}
-                  disabled={!orderId}
-                >
-                  Thanh toán
-                </button>
+                  {customerMessage && (
+                    <div style={{ color: customerMessage.includes('thành công') ? '#43b244' : 'red', marginTop: 4, fontWeight: 500 }}>
+                      {customerMessage}
+                    </div>
+                  )}
+                </div>
+                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <thead>
+                    <tr style={{ background: '#e3f0ff' }}>
+                      <th>Tên</th>
+                      <th>Màu</th>
+                      <th>Size</th>
+                      <th>Giá</th>
+                      <th>SL</th>
+                      <th>Thành tiền</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.length === 0 ? (
+                      <tr><td colSpan={7} style={{ textAlign: 'center', color: '#888' }}>Chưa có sản phẩm nào</td></tr>
+                    ) : (
+                      cart.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{item.tenSanPham}</td>
+                          <td>{item.mauSac}</td>
+                          <td>{item.kichThuoc}</td>
+                          <td>{item.giaBan?.toLocaleString()}</td>
+                          <td>{item.quantity}</td>
+                          <td>{(item.giaBan * item.quantity).toLocaleString()}</td>
+                          <td style={{ display: 'flex', gap: 8 }}>
+                            <button className="btn" style={{ background: '#1976d2', color: '#fff', fontWeight: 600 }} onClick={() => handleShowEditModal(idx)}>Sửa</button>
+                            <button className="btn red" onClick={() => handleRemoveFromCart(idx)}>Xóa</button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+                {/* Nút thanh toán và tổng tiền luôn ở dưới, cùng một hàng */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 24px 0 0' }}>
+                  <div style={{ fontWeight: 700, fontSize: 18, color: '#1976d2' }}>
+                    Tổng tiền: {total.toLocaleString()} đ
+                  </div>
+                  <button
+                    style={{
+                      background: '#43b244',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '10px 28px',
+                      fontWeight: 700,
+                      fontSize: 18,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 8px rgba(67,178,68,0.08)'
+                    }}
+                    onClick={handleOpenPaymentModal}
+                    disabled={!orderId}
+                  >
+                    Thanh toán
+                  </button>
+                </div>
               </div>
             </div>
           </div>

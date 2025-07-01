@@ -32,6 +32,7 @@ const SanPhamPage = () => {
     giaBan: "",
     giaGiamGia: "",
     trangThai: 1,
+    imanges: ""
   });
   const [loading, setLoading] = useState(false);
 
@@ -56,6 +57,11 @@ const SanPhamPage = () => {
     soLuong: ""
   });
   const [spctList, setSpctList] = useState([]);
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Thêm state upload cho form sửa
+  const [uploadingEditImage, setUploadingEditImage] = useState(false);
 
   // Lấy danh sách sản phẩm
   const fetchProducts = () => {
@@ -188,6 +194,7 @@ const SanPhamPage = () => {
       danhMuc: {
         id: addForm.idDanhMuc
       },
+      imanges: Array.isArray(addForm.imanges) ? addForm.imanges.join(',') : addForm.imanges
     };
     setLoading(true);
     try {
@@ -208,6 +215,7 @@ const SanPhamPage = () => {
         giaBan: "",
         giaGiamGia: "",
         trangThai: 1,
+        imanges: ""
       });
       fetchProducts();
       alert("Thêm sản phẩm thành công!");
@@ -221,28 +229,35 @@ const SanPhamPage = () => {
 
   const handleAddSpct = async (e) => {
     e.preventDefault();
-    if (!spctProduct) return;
+    // Lấy id sản phẩm gốc: ưu tiên lastAddedProductId nếu có, nếu không thì lấy từ spctProduct
+    const productId = lastAddedProductId || (spctProduct && spctProduct.id);
+    if (!productId) {
+      alert("Không tìm thấy sản phẩm gốc!");
+      return;
+    }
+    if (!spctForm.idMauSac || !spctForm.idKichThuoc || !spctForm.giaBan || !spctForm.soLuong) {
+      alert("Vui lòng nhập đầy đủ thông tin biến thể!");
+      return;
+    }
     try {
       await axios.post(
-        `http://localhost:8080/api/san-pham-chi-tiet/them/${spctProduct.id}`,
+        `http://localhost:8080/api/san-pham-chi-tiet/them/${productId}`,
         {
           idKichThuoc: spctForm.idKichThuoc,
           idMauSac: spctForm.idMauSac,
           soLuong: Number(spctForm.soLuong),
           giaBan: Number(spctForm.giaBan),
-          // Nếu có thêm trường ngày sản xuất, bạn có thể thêm ở đây
-          // ngaySanXuat: spctForm.ngaySanXuat
         }
       );
       setSpctForm({ idMauSac: "", idKichThuoc: "", giaBan: "", soLuong: "" });
-      // Reload danh sách sản phẩm chi tiết
-      fetch(`http://localhost:8080/api/san-pham-chi-tiet/${spctProduct.id}`)
+      // Reload lại danh sách biến thể
+      fetch(`http://localhost:8080/api/san-pham-chi-tiet/${productId}`)
         .then(res => res.json())
         .then(data => setSpctList(Array.isArray(data) ? data : [data]))
         .catch(() => setSpctList([]));
       alert("Thêm biến thể thành công!");
     } catch (err) {
-      alert("Thêm biến thể thất bại!");
+      alert("Thêm biến thể thất bại! " + (err.response?.data?.message || err.message));
     }
   };
 
@@ -295,6 +310,7 @@ const SanPhamPage = () => {
         giaBan: Number(editForm.giaBan),
         giaGiamGia: editForm.giaGiamGia ? Number(editForm.giaGiamGia) : 0,
         trangThai: Number(editForm.trangThai),
+        imanges: editForm.imanges
       });
       setShowEditModal(false);
       setEditId(null);
@@ -362,6 +378,55 @@ const SanPhamPage = () => {
     setShowSpctModal(false);
     setSpctProduct(null);
     setSpctList([]);
+  };
+
+  // Hàm upload nhiều ảnh
+  const handleMultiImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    let uploaded = [];
+    for (let file of files) {
+      const formData = new FormData();
+      formData.append('file', file);
+      setUploadingImage(true);
+      try {
+        const res = await fetch('http://localhost:8080/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        if (data && data.fileName) {
+          uploaded.push(data.fileName);
+        }
+      } catch (err) {
+        alert('Upload ảnh thất bại!');
+      }
+      setUploadingImage(false);
+    }
+    setAddForm(f => ({ ...f, imanges: uploaded }));
+  };
+
+  // Hàm upload ảnh cho form sửa
+  const handleEditImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    setUploadingEditImage(true);
+    try {
+      const res = await fetch('http://localhost:8080/api/upload', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      if (data && data.fileName) {
+        setEditForm(f => ({ ...f, imanges: data.fileName }));
+      } else {
+        alert('Upload ảnh thất bại!');
+      }
+    } catch (err) {
+      alert('Upload ảnh thất bại!');
+    }
+    setUploadingEditImage(false);
   };
 
   return (
@@ -443,6 +508,25 @@ const SanPhamPage = () => {
                   setAddForm((f) => ({ ...f, tenSanPham: e.target.value }))
                 }
               />
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleMultiImageUpload}
+                style={{ marginBottom: 8 }}
+              />
+              {Array.isArray(addForm.imanges) && addForm.imanges.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                  {addForm.imanges.map((img, idx) => (
+                    <img
+                      key={idx}
+                      src={`http://localhost:8080/images/${img}`}
+                      alt={`Ảnh ${idx+1}`}
+                      style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6 }}
+                    />
+                  ))}
+                </div>
+              )}
               {!addForm.idDanhMuc && (
                 <span style={{ color: "red" }}>Chọn danh mục!</span>
               )}
@@ -594,6 +678,23 @@ const SanPhamPage = () => {
                   setEditForm((f) => ({ ...f, tenSanPham: e.target.value }))
                 }
               />
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleEditImageUpload}
+                style={{ marginBottom: 8 }}
+              />
+              {uploadingEditImage && <span>Đang upload ảnh...</span>}
+              {editForm.imanges && (
+                <img
+                  src={`http://localhost:8080/images/${editForm.imanges}`}
+                  alt={editForm.tenSanPham}
+                  style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 6, marginBottom: 8 }}
+                />
+              )}
+              {!editForm.idDanhMuc && (
+                <span style={{ color: "red" }}>Chọn danh mục!</span>
+              )}
               <select
                 required
                 value={editForm.idDanhMuc}
@@ -793,10 +894,24 @@ const SanPhamPage = () => {
             {filteredProducts.map((product) => (
               <React.Fragment key={product.id}>
                 <tr>
-                  <td>
+                  <td style={{ width: 80, height: 80, textAlign: 'center', verticalAlign: 'middle' }}>
                     <img
-                      src={product.imanges || "https://via.placeholder.com/50"}
-                      style={{ width: 40, height: 40, borderRadius: 6 }}
+                      src={product.imanges ? `http://localhost:8080/images/${(Array.isArray(product.imanges) ? product.imanges[0] : product.imanges.split(',')[0])}` : "https://via.placeholder.com/50"}
+                      alt={product.tenSanPham}
+                      style={{
+                        width: 100,
+                        height: 80,
+                        borderRadius: 6,
+                        objectFit: "cover",
+                        display: "block",
+                        margin: "auto",
+                        background: "#f6f8fa"
+                      }}
+                      onError={e => {
+                        if (!e.target.src.includes("placeholder.com")) {
+                          e.target.src = "https://via.placeholder.com/50";
+                        }
+                      }}
                     />
                   </td>
                   <td>{product.tenSanPham}</td>
