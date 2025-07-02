@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/AdminPanel.css';
+import {
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  Button, TextField, Avatar, Dialog, DialogTitle, DialogContent, DialogActions,
+  Snackbar, Alert, Card, CardHeader, CardContent, Chip, Box
+} from '@mui/material';
+import AddShoppingCartIcon from '@mui/icons-material/AddShoppingCart';
+import Swal from 'sweetalert2';
 
 const BanHangTaiQuayPage = () => {
   // State mẫu cho UI demo
@@ -166,7 +173,19 @@ const BanHangTaiQuayPage = () => {
 
   // Hàm thêm sản phẩm vào hóa đơn
   const handleAddToOrder = async () => {
-    if (!orderId || !selectedProduct) return;
+    if (!orderId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Vui lòng chọn hoặc tạo hóa đơn trước!',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1800,
+        width: 250
+      });
+      return;
+    }
+    if (!selectedProduct) return;
     if (qty < 1 || qty > selectedProduct.soLuong) {
       setAddError('Số lượng không hợp lệ!');
       return;
@@ -190,6 +209,15 @@ const BanHangTaiQuayPage = () => {
       setShowQtyModal(false);
       await fetchCartFromBE(orderId);
       await fetchProductsFromBE();
+      Swal.fire({
+        icon: 'success',
+        title: 'Thêm sản phẩm thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
     } catch (err) {
       setAddError(err.message || 'Lỗi không xác định');
     } finally {
@@ -197,12 +225,24 @@ const BanHangTaiQuayPage = () => {
     }
   };
 
-  // Mở modal sửa số lượng
-  const handleShowEditModal = (idx) => {
-    setEditIdx(idx);
-    setEditQty(cart[idx].quantity);
-    setEditError('');
-    setShowEditModal(true);
+  // Hàm sửa số lượng sản phẩm trong hóa đơn tạm (có xác nhận)
+  const handleShowEditModal = async (idx) => {
+    const result = await Swal.fire({
+      title: 'Bạn có chắc chắn muốn sửa sản phẩm này không?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy bỏ',
+      confirmButtonColor: '#1976d2',
+      cancelButtonColor: '#d33',
+    });
+    if (result.isConfirmed) {
+      setEditIdx(idx);
+      setEditQty(Number(cart[idx]?.quantity || 1));
+      setEditError('');
+      setShowEditModal(true);
+      
+    }
   };
 
   // Gọi API sửa số lượng
@@ -232,6 +272,15 @@ const BanHangTaiQuayPage = () => {
       setShowEditModal(false);
       await fetchCartFromBE(orderId);
       await fetchProductsFromBE();
+      Swal.fire({
+        icon: 'success',
+        title: 'Sửa sản phẩm thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
     } catch (err) {
       setEditError('Lỗi khi cập nhật số lượng!');
     } finally {
@@ -239,18 +288,38 @@ const BanHangTaiQuayPage = () => {
     }
   };
 
-  // Gọi API xóa sản phẩm khỏi hóa đơn
+  // Hàm xóa sản phẩm khỏi hóa đơn tạm (có xác nhận)
   const handleRemoveFromCart = async (idx) => {
-    const item = cart[idx];
-    if (!item) return;
-    try {
-      await fetch(`http://localhost:8080/api/donhangchitiet/delete/${item.id}`, {
-        method: 'DELETE',
+    const result = await Swal.fire({
+      title: 'Bạn có chắc chắn muốn xóa sản phẩm này không?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy bỏ',
+      confirmButtonColor: '#1976d2',
+      cancelButtonColor: '#d33',
+    });
+    if (result.isConfirmed) {
+      if (!orderId || !cart[idx]) return;
+      try {
+        const res = await fetch(`http://localhost:8080/api/donhangchitiet/delete/${cart[idx].id}`, {
+          method: 'DELETE',
+        });
+        if (!res.ok) throw new Error('Lỗi khi xóa sản phẩm khỏi hóa đơn');
+        await fetchCartFromBE(orderId);
+        await fetchProductsFromBE();
+        Swal.fire({
+        icon: 'success',
+        title: 'Xóa Sản Phẩm Thành Công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
       });
-      await fetchCartFromBE(orderId);
-      await fetchProductsFromBE();
-    } catch (err) {
-      alert('Lỗi khi xóa sản phẩm khỏi hóa đơn!');
+      } catch (err) {
+        // Có thể hiện alert lỗi nếu muốn
+      }
     }
   };
 
@@ -271,8 +340,22 @@ const BanHangTaiQuayPage = () => {
     setShowQtyModal(true);
   };
 
-  // Hàm tạo hóa đơn mới
+  // Hàm tạo hóa đơn mới (có xác nhận)
   const handleCreateOrder = async () => {
+    const result = await Swal.fire({
+      title: 'Bạn có chắc chắn muốn tạo hóa đơn mới không?',
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Xác nhận',
+      cancelButtonText: 'Hủy bỏ',
+      confirmButtonColor: '#1976d2',
+      cancelButtonColor: '#d33',
+      width: 300,
+      customClass: {
+        popup: 'swal2-custom-popup'
+      }
+    });
+    if (!result.isConfirmed) return;
     setOrderLoading(true);
     setOrderError('');
     try {
@@ -382,6 +465,16 @@ const BanHangTaiQuayPage = () => {
 
   // Hàm mở modal thanh toán
   const handleOpenPaymentModal = () => {
+    if (cart.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Không thể thanh toán khi hóa đơn chưa có sản phẩm!',
+        showConfirmButton: false,
+        timer: 1800,
+        width: 350
+      });
+      return;
+    }
     setPaymentAmount(0);
     setPaymentMethod('TIEN_MAT');
     setShowPaymentModal(true);
@@ -391,16 +484,39 @@ const BanHangTaiQuayPage = () => {
   const handleConfirmPayment = async () => {
     if (!orderId) return;
     try {
+      const payload = {
+        tongTien: total,
+        idkhachHang: selectedCustomerId || null,
+        tenKhachHang: !selectedCustomerId && customerName ? customerName : null,
+        email: !selectedCustomerId && customerEmail ? customerEmail : null,
+        soDienThoai: !selectedCustomerId && customerPhone ? customerPhone : null
+      };
       const res = await fetch(`http://localhost:8080/api/xacnhanthanhtoan/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tongTien: total })
+        body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('Lỗi khi xác nhận thanh toán');
       setShowPaymentModal(false);
-      alert('Thanh toán thành công!');
+      // Hiển thị thông báo thành công
+      Swal.fire({
+        icon: 'success',
+        title: 'Thanh toán thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
       await fetchOrders();
-      // TODO: reset form nếu muốn
+      // RESET trạng thái hóa đơn tạm
+      setOrderId(null);
+      setCart([]);
+      setCustomerName('');
+      setCustomerEmail('');
+      setCustomerPhone('');
+      setSelectedVoucherId('');
+      setPaymentAmount(0);
     } catch (err) {
       alert(err.message || 'Lỗi khi xác nhận thanh toán!');
     }
@@ -477,6 +593,7 @@ const BanHangTaiQuayPage = () => {
       });
       if (!res.ok) throw new Error('Lỗi khi cập nhật khách hàng cho hóa đơn');
       setCustomerMessage(customerId ? 'Chọn khách hàng thành công!' : 'Đã chuyển về khách lẻ!');
+      await fetchOrders();
     } catch (err) {
       setCustomerMessage(err.message || 'Lỗi khi cập nhật khách hàng!');
     }
@@ -524,126 +641,111 @@ const BanHangTaiQuayPage = () => {
         ) : filteredProducts.length === 0 ? (
           <div style={{ color: '#888', fontStyle: 'italic', textAlign: 'center', marginTop: 32 }}>Không có sản phẩm phù hợp</div>
         ) : (
-          <table style={{
-            width: '100%',
-            borderCollapse: 'separate',
-            borderSpacing: 0,
-            background: '#fff',
-            borderRadius: 16,
-            boxShadow: '0 4px 16px rgba(25,118,210,0.08)',
-            overflow: 'hidden'
-          }}>
-            <thead>
-              <tr style={{ background: '#e3f0ff', color: '#1976d2', fontWeight: 700 }}>
-                <th style={{ padding: 10 }}>Ảnh</th>
-                <th style={{ padding: 10 }}>Tên sản phẩm</th>
-                <th style={{ padding: 10 }}>Màu</th>
-                <th style={{ padding: 10 }}>Size</th>
-                <th style={{ padding: 10 }}>Tồn kho</th>
-                <th style={{ padding: 10 }}>Giá</th>
-                <th style={{ padding: 10 }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.map(product => (
-                <tr key={product.id} style={{ borderBottom: '1px solid #e3e8ee', fontSize: 16 }}>
-                  <td style={{ textAlign: 'center', padding: 8 }}>
-                    <img
-                      src={product.images ? `http://localhost:8080/images/${product.images.split(',')[0]}` : '/logo192.png'}
-                      alt={product.tenSanPham}
-                      style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, background: '#f6f8fa' }}
-                      onError={e => {
-                        if (!e.target.src.includes('logo192.png')) {
-                          e.target.src = '/logo192.png';
-                        }
-                      }}
-                    />
-                  </td>
-                  <td style={{ fontWeight: 600, padding: 8 }}>{product.tenSanPham}</td>
-                  <td style={{ padding: 8 }}>{product.mauSac}</td>
-                  <td style={{ padding: 8 }}>{product.kichThuoc}</td>
-                  <td style={{ padding: 8, textAlign: 'center' }}>{product.soLuong}</td>
-                  <td style={{ padding: 8, color: '#1976d2', fontWeight: 700 }}>{product.giaBan?.toLocaleString()} đ</td>
-                  <td style={{ padding: 8 }}>
-                    <button
-                      className="btn blue"
-                      style={{
-                        borderRadius: 8,
-                        padding: '6px 16px',
-                        background: '#1976d2',
-                        color: '#fff',
-                        border: 'none',
-                        fontWeight: 600,
-                        fontSize: 15,
-                        cursor: product.soLuong > 0 ? 'pointer' : 'not-allowed',
-                        opacity: product.soLuong > 0 ? 1 : 0.5,
-                      }}
-                      onClick={() => handleShowQtyModal(product)}
-                      disabled={product.soLuong <= 0}
-                      title={product.soLuong <= 0 ? 'Hết hàng' : ''}
-                    >
-                      {product.soLuong > 0 ? 'Thêm vào hóa đơn' : 'Hết hàng'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <TableContainer component={Paper} sx={{ borderRadius: 3, boxShadow: 3, mt: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ background: '#e3f0ff' }}>
+                  <TableCell>Ảnh</TableCell>
+                  <TableCell>Tên sản phẩm</TableCell>
+                  <TableCell>Màu</TableCell>
+                  <TableCell>Size</TableCell>
+                  <TableCell>Tồn kho</TableCell>
+                  <TableCell>Giá</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredProducts.map(product => (
+                  <TableRow key={product.id} hover>
+                    <TableCell>
+                      <Avatar
+                        src={product.images ? `http://localhost:8080/images/${product.images.split(',')[0]}` : '/logo192.png'}
+                        alt={product.tenSanPham}
+                        sx={{ width: 56, height: 56, borderRadius: 2, bgcolor: '#f6f8fa' }}
+                        variant="rounded"
+                      />
+                    </TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>{product.tenSanPham}</TableCell>
+                    <TableCell>{product.mauSac}</TableCell>
+                    <TableCell>{product.kichThuoc}</TableCell>
+                    <TableCell align="center">{product.soLuong}</TableCell>
+                    <TableCell sx={{ color: '#1976d2', fontWeight: 700 }}>{product.giaBan?.toLocaleString()} đ</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        size="small"
+                        startIcon={<AddShoppingCartIcon />}
+                        sx={{
+                          borderRadius: 2,
+                          fontWeight: 600,
+                          fontSize: 15,
+                          opacity: product.soLuong > 0 ? 1 : 0.5
+                        }}
+                        onClick={() => handleShowQtyModal(product)}
+                        disabled={product.soLuong <= 0}
+                      >
+                        {product.soLuong > 0 ? 'Thêm vào hóa đơn' : 'Hết hàng'}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
         )}
       </div>
       {/* PHẦN DƯỚI: 2 bảng hóa đơn */}
       <div style={{ flex: 1, padding: 24, background: '#f6f8fa' }}>
         <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
           {/* Card hóa đơn chờ */}
-          <div style={{ flex: '0 0 38%', minWidth: 400, maxWidth: 540, background: '#fff', borderRadius: 16, boxShadow: '0 4px 16px rgba(25,118,210,0.08)', padding: 0, border: '1px solid #e3e8ee', minHeight: 80, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', overflow: 'hidden' }}>
-            {/* Thanh tiêu đề có nút thu gọn/mở rộng và nút tạo hóa đơn */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px 12px 20px', userSelect: 'none' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer' }} onClick={toggleCollapse}>
-                <h3 style={{ margin: 0, color: '#1976d2', letterSpacing: 1, fontSize: 20, fontWeight: 700 }}>DANH SÁCH HÓA ĐƠN CHỜ</h3>
-                <span style={{ fontSize: 22, color: '#1976d2', transition: 'transform 0.2s', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
-                  ▼
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                {orderId && (
-                  <span style={{
-                    background: '#e3f0ff',
+          <Card sx={{ flex: '0 0 38%', minWidth: 400, maxWidth: 540, borderRadius: 3, boxShadow: 3, minHeight: 80, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', overflow: 'hidden', mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: 2, pt: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 0 }}>
+                <Box
+                  sx={{
                     color: '#1976d2',
+                    letterSpacing: 1,
+                    fontSize: 18,
                     fontWeight: 700,
-                    borderRadius: 8,
-                    padding: '6px 14px',
-                    fontSize: 16,
-                    boxShadow: '0 2px 8px rgba(25,118,210,0.08)'
-                  }}>
-                    Mã HĐ: #{orderId}
-                  </span>
-                )}
-                <button
-                  className="btn blue"
-                  style={{
-                    fontWeight: 600,
-                    borderRadius: 8,
-                    padding: '6px 18px',
-                    fontSize: 15,
-                    background: '#1976d2',
-                    color: '#fff',
-                    border: 'none',
-                    marginLeft: 12,
-                    boxShadow: '0 2px 8px rgba(25,118,210,0.08)'
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    flex: 1
                   }}
-                  onClick={addCustomerAndCreateOrder}
                 >
-                  + Tạo hóa đơn
-                </button>
-              </div>
-            </div>
-            {/* Nội dung bảng, có hiệu ứng thu gọn/mở rộng */}
-            <div style={{
-              maxHeight: collapsed ? 0 : '70vh',
-              overflowY: collapsed ? 'hidden' : 'auto',
-              transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)',
-              padding: collapsed ? 0 : '0 20px 20px 20px'
-            }}>
+                  <Box sx={{ fontSize: '15px', fontWeight: 'bold' }}>
+                    HÓA ĐƠN CHỜ
+                  </Box>
+
+
+                </Box>
+                {orderId && (
+                  <Chip
+                    label={`Mã HĐ: #${orderId}`}
+                    color="info"
+                    sx={{ fontWeight: 300, fontSize: 12, ml: 2 }}
+                  />
+                )}
+              </Box>
+              <Button
+  variant="contained"
+  color="primary"
+  sx={{
+    fontWeight: 600,
+    borderRadius: 2,
+    padding: '4px 12px',      // giảm padding ngang & dọc
+    fontSize: 13,             // giảm kích thước chữ
+    ml: 2,
+    boxShadow: 1,
+    minWidth: 'unset',        // xóa minWidth mặc định (MUI Button có minWidth 64px)
+  }}
+  onClick={addCustomerAndCreateOrder}
+>
+  + Tạo hóa đơn
+</Button>
+            </Box>
+            <CardContent sx={{ pt: 1, pb: 2, px: 2, maxHeight: collapsed ? 0 : '70vh', overflowY: collapsed ? 'hidden' : 'auto', transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)' }}>
               {ordersLoading ? (
                 <div style={{ color: '#1976d2', padding: 16, textAlign: 'center' }}>Đang tải...</div>
               ) : ordersError ? (
@@ -653,111 +755,73 @@ const BanHangTaiQuayPage = () => {
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 260, padding: 24 }}>
                     <div style={{ fontSize: 54, color: '#e3f0ff', marginBottom: 12 }}>🧾</div>
                     <div style={{ color: '#888', fontSize: 16, marginBottom: 16, textAlign: 'center' }}>Chưa có hóa đơn chờ nào.<br/>Hãy tạo hóa đơn mới để bắt đầu bán hàng!</div>
-                    <button className="btn blue" style={{ fontWeight: 600, borderRadius: 8, padding: '8px 20px', fontSize: 16, background: '#1976d2', color: '#fff', border: 'none', boxShadow: '0 2px 8px rgba(25,118,210,0.08)' }} onClick={handleCreateOrder}>Tạo hóa đơn mới</button>
+                    <Button variant="contained" color="primary" sx={{ fontWeight: 600, borderRadius: 2, padding: '8px 20px', fontSize: 16, boxShadow: 1 }} onClick={handleCreateOrder}>Tạo hóa đơn mới</Button>
                   </div>
                 ) : (
-                  <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0, fontSize: 14, borderRadius: 12, overflow: 'hidden', boxShadow: '0 2px 8px rgba(25,118,210,0.04)' }}>
-                    <thead>
-                      <tr style={{ background: '#e3f0ff', color: '#1976d2' }}>
-                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Mã HĐ</th>
-                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Ngày tạo</th>
-                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Tổng tiền</th>
-                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Khách</th>
-                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}>Trạng thái</th>
-                        <th style={{ padding: 8, borderBottom: '1px solid #e3e8ee' }}></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {orders.map(order => (
-                        <tr key={order.id} style={{ background: orderId === order.id ? '#e3f0ff' : undefined, cursor: 'pointer', transition: 'background 0.2s' }}
-                          onClick={() => handleSelectOrder(order)}
-                          onMouseOver={e => e.currentTarget.style.background = '#f0f7ff'}
-                          onMouseOut={e => e.currentTarget.style.background = orderId === order.id ? '#e3f0ff' : ''}
-                        >
-                          <td style={{ padding: 8, textAlign: 'center', fontWeight: 600 }}>#{order.id}</td>
-                          <td style={{ padding: 8, textAlign: 'center' }}>{order.ngayTao || ''}</td>
-                          <td style={{ padding: 8, textAlign: 'right', fontWeight: 500 }}>{order.tongTien?.toLocaleString() || 0} đ</td>
-                          <td style={{ padding: 8, textAlign: 'center' }}>{order.idkhachHang ? `#${order.idkhachHang}` : ''}</td>
-                          <td style={{ padding: 8, textAlign: 'center', minWidth: 110 }}>
-                            {order.trangThai === 0 ? (
-                              <span style={{
-                                background: '#ff9800',
-                                color: '#fff',
-                                borderRadius: 12,
-                                padding: '2px 14px',
-                                fontWeight: 600,
-                                fontSize: 13,
-                                display: 'inline-block',
-                                minWidth: 90,
-                                textAlign: 'center',
-                                whiteSpace: 'nowrap'
-                              }}>Chờ thanh toán</span>
-                            ) : order.trangThai === 1 ? (
-                              <span style={{
-                                background: '#43b244',
-                                color: '#fff',
-                                borderRadius: 12,
-                                padding: '2px 14px',
-                                fontWeight: 600,
-                                fontSize: 13,
-                                display: 'inline-block',
-                                minWidth: 90,
-                                textAlign: 'center',
-                                whiteSpace: 'nowrap'
-                              }}>Đã thanh toán</span>
-                            ) : (
-                              <span style={{
-                                background: '#888',
-                                color: '#fff',
-                                borderRadius: 12,
-                                padding: '2px 14px',
-                                fontWeight: 600,
-                                fontSize: 13,
-                                display: 'inline-block',
-                                minWidth: 90,
-                                textAlign: 'center',
-                                whiteSpace: 'nowrap'
-                              }}>{order.trangThai}</span>
-                            )}
-                          </td>
-                          <td style={{ padding: 8, textAlign: 'center' }}>
-                            <button className="btn blue" style={{ fontWeight: 600, borderRadius: 8, padding: '4px 12px', background: orderId === order.id ? '#1976d2' : '#fff', color: orderId === order.id ? '#fff' : '#1976d2', border: '1px solid #1976d2', transition: 'all 0.2s' }} disabled={orderId === order.id}>
-                              {orderId === order.id ? 'Đang thao tác' : 'Chọn'}
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 1, mt: 1 }}>
+                    <Table size="small">
+                      <TableHead>
+                        <TableRow sx={{ background: '#e3f0ff' }}>
+                          <TableCell>Mã HĐ</TableCell>
+                          <TableCell>Ngày tạo</TableCell>
+                          <TableCell align="right">Tổng tiền</TableCell>
+                          <TableCell>Khách</TableCell>
+                          <TableCell>Trạng thái</TableCell>
+                          <TableCell></TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {orders.map(order => (
+                          <TableRow key={order.id} hover selected={orderId === order.id} onClick={() => handleSelectOrder(order)}
+                            sx={{ cursor: 'pointer', background: orderId === order.id ? '#e3f0ff' : undefined }}>
+                            <TableCell sx={{ fontWeight: 600 }}>#{order.id}</TableCell>
+                            <TableCell>{order.ngayTao || ''}</TableCell>
+                            <TableCell align="right">{order.tongTien?.toLocaleString() || 0} đ</TableCell>
+                            <TableCell>{order.idkhachHang ? `#${order.idkhachHang}` : ''}</TableCell>
+                            <TableCell>
+                              {order.trangThai === 0 ? (
+                                <Chip label="Chờ thanh toán" color="warning" size="small" />
+                              ) : order.trangThai === 1 ? (
+                                <Chip label="Đã thanh toán" color="success" size="small" />
+                              ) : (
+                                <Chip label={order.trangThai} color="default" size="small" />
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                variant={orderId === order.id ? 'contained' : 'outlined'}
+                                color="primary"
+                                size="small"
+                                sx={{ fontWeight: 600, borderRadius: 2, px: 2 }}
+                                disabled={orderId === order.id}
+                              >
+                                {orderId === order.id ? 'Đang thao tác' : 'Chọn'}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 )
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
           {/* Card hóa đơn tạm */}
-          <div style={{ flex: '1 1 65%', display: 'flex', flexDirection: 'column', gap: 24 }}>
-            {/* Card hóa đơn tạm thu gọn/mở rộng */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px 12px 24px', cursor: 'pointer', userSelect: 'none' }} onClick={toggleCollapseCart}>
-              <h3 style={{ margin: 0, color: '#1976d2', letterSpacing: 1, fontSize: 20, fontWeight: 700 }}>HÓA ĐƠN TẠM</h3>
-              <span style={{ fontSize: 22, color: '#1976d2', transition: 'transform 0.2s', transform: collapsedCart ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
-            </div>
-            {/* Nội dung hóa đơn tạm, có hiệu ứng thu gọn/mở rộng */}
-            <div style={{ maxHeight: collapsedCart ? 0 : 600, overflow: 'hidden', transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)', padding: collapsedCart ? 0 : '0 24px 24px 24px', display: 'flex', flexDirection: 'column', height: 600 }}>
+          <Card sx={{ flex: '1 1 65%', borderRadius: 3, boxShadow: 3, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <CardHeader
+              title={<span style={{ color: '#1976d2', letterSpacing: 1, fontSize: 20, fontWeight: 700 }}>HÓA ĐƠN TẠM</span>}
+              sx={{ pb: 0, pt: 2, px: 2 }}
+            />
+            <CardContent sx={{ pt: 1, pb: 2, px: 2, maxHeight: collapsedCart ? 0 : 600, overflow: 'hidden', transition: 'max-height 0.3s cubic-bezier(.4,2,.6,1)', display: 'flex', flexDirection: 'column', height: 600 }}>
               <div style={{ flex: 1, overflowY: 'auto' }}>
-                <div style={{
-                  background: '#f6f8fa',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 8,
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: 16,
-                  alignItems: 'center',
-                }}>
+                <div style={{ background: '#f6f8fa', borderRadius: 2, padding: 16, marginBottom: 8, display: 'flex', flexWrap: 'wrap', gap: 16, alignItems: 'center' }}>
                   {/* Dropdown chọn khách hàng */}
                   <select
                     value={selectedCustomerId || ''}
                     onChange={handleCustomerChange}
                     style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
+                    disabled={!orderId}
                   >
                     <option value=''>-- Chọn khách hàng --</option>
                     {customers.map(c => (
@@ -767,30 +831,31 @@ const BanHangTaiQuayPage = () => {
                     ))}
                   </select>
                   <input
-                    type="text"
-                    placeholder="Họ tên khách hàng"
                     value={customerName}
                     onChange={e => setCustomerName(e.target.value)}
                     style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                    disabled={!orderId}
+                     placeholder="Nhập tên khách hàng"
                   />
                   <input
-                    type="email"
-                    placeholder="Email"
                     value={customerEmail}
                     onChange={e => setCustomerEmail(e.target.value)}
                     style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                    disabled={!orderId}
+                     placeholder="Nhập email khách"
                   />
                   <input
-                    type="tel"
-                    placeholder="Số điện thoại"
                     value={customerPhone}
                     onChange={e => setCustomerPhone(e.target.value)}
                     style={{ flex: '1 1 140px', padding: 8, borderRadius: 6, border: '1px solid #ccc', fontSize: 15 }}
+                    disabled={!orderId}
+                     placeholder="Nhập số điện thoại"
                   />
                   <select
                     value={selectedVoucherId || ''}
                     onChange={handleVoucherChange}
                     style={{ flex: '1 1 180px', padding: 8, borderRadius: 6, border: '1px solid #1976d2', fontSize: 15 }}
+                    disabled={!orderId}
                   >
                     <option value="">-- Chọn voucher --</option>
                     {vouchers.map(v => (
@@ -808,270 +873,188 @@ const BanHangTaiQuayPage = () => {
                     </div>
                   )}
                 </div>
-                <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: 0 }}>
-                  <thead>
-                    <tr style={{ background: '#e3f0ff' }}>
-                      <th>Tên</th>
-                      <th>Màu</th>
-                      <th>Size</th>
-                      <th>Giá</th>
-                      <th>SL</th>
-                      <th>Thành tiền</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cart.length === 0 ? (
-                      <tr><td colSpan={7} style={{ textAlign: 'center', color: '#888' }}>Chưa có sản phẩm nào</td></tr>
-                    ) : (
-                      cart.map((item, idx) => (
-                        <tr key={idx}>
-                          <td>{item.tenSanPham}</td>
-                          <td>{item.mauSac}</td>
-                          <td>{item.kichThuoc}</td>
-                          <td>{item.giaBan?.toLocaleString()}</td>
-                          <td>{item.quantity}</td>
-                          <td>{(item.giaBan * item.quantity).toLocaleString()}</td>
-                          <td style={{ display: 'flex', gap: 8 }}>
-                            <button className="btn" style={{ background: '#1976d2', color: '#fff', fontWeight: 600 }} onClick={() => handleShowEditModal(idx)}>Sửa</button>
-                            <button className="btn red" onClick={() => handleRemoveFromCart(idx)}>Xóa</button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: 1, mt: 1 }}>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow sx={{ background: '#e3f0ff' }}>
+                        <TableCell>Tên</TableCell>
+                        <TableCell>Màu</TableCell>
+                        <TableCell>Size</TableCell>
+                        <TableCell>Giá</TableCell>
+                        <TableCell>SL</TableCell>
+                        <TableCell>Thành tiền</TableCell>
+                        <TableCell></TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {cart.length === 0 ? (
+                        <TableRow><TableCell colSpan={7} align="center" sx={{ color: '#888' }}>Chưa có sản phẩm nào</TableCell></TableRow>
+                      ) : (
+                        cart.map((item, idx) => (
+                          <TableRow key={idx}>
+                            <TableCell>{item.tenSanPham}</TableCell>
+                            <TableCell>{item.mauSac}</TableCell>
+                            <TableCell>{item.kichThuoc}</TableCell>
+                            <TableCell>{item.giaBan?.toLocaleString()}</TableCell>
+                            <TableCell>{item.quantity}</TableCell>
+                            <TableCell>{(item.giaBan * item.quantity).toLocaleString()}</TableCell>
+                            <TableCell>
+                              <Button variant="outlined" color="primary" size="small" sx={{ mr: 1, fontWeight: 600 }} onClick={() => handleShowEditModal(idx)}>Sửa</Button>
+                              <Button variant="contained" color="error" size="small" sx={{ fontWeight: 600 }} onClick={() => handleRemoveFromCart(idx)}>Xóa</Button>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
                 {/* Nút thanh toán và tổng tiền luôn ở dưới, cùng một hàng */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '8px 24px 0 0' }}>
                   <div style={{ fontWeight: 700, fontSize: 18, color: '#1976d2' }}>
                     Tổng tiền: {total.toLocaleString()} đ
                   </div>
-                  <button
-                    style={{
-                      background: '#43b244',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: 8,
-                      padding: '10px 28px',
-                      fontWeight: 700,
-                      fontSize: 18,
-                      cursor: 'pointer',
-                      boxShadow: '0 2px 8px rgba(67,178,68,0.08)'
-                    }}
+                  <Button
+                    variant="contained"
+                    color="success"
+                    sx={{ borderRadius: 2, padding: '10px 28px', fontWeight: 700, fontSize: 18, boxShadow: 1 }}
                     onClick={handleOpenPaymentModal}
                     disabled={!orderId}
                   >
                     Thanh toán
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
       {orderError && <div style={{ color: 'red', marginBottom: 12 }}>{orderError}</div>}
       {/* Modal chọn số lượng khi thêm sản phẩm */}
-      {showQtyModal && selectedProduct && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: 12,
-            padding: 32,
-            minWidth: 320,
-            boxShadow: '0 8px 32px rgba(25,118,210,0.18)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
-            <h3 style={{ marginBottom: 16 }}>Chọn số lượng cho <span style={{ color: '#1976d2' }}>{selectedProduct.tenSanPham}</span></h3>
-            <input
-              type="number"
-              min={1}
-              max={selectedProduct.soLuong}
-              value={qty}
-              onChange={e => setQty(Number(e.target.value))}
-              style={{ fontSize: 18, padding: 8, width: 100, textAlign: 'center', marginBottom: 16, borderRadius: 6, border: '1px solid #1976d2' }}
-            />
-            <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-              <button
-                onClick={handleAddToOrder}
-                style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-                disabled={qty < 1 || qty > selectedProduct.soLuong}
-              >
-                Xác nhận
-              </button>
-              <button
-                onClick={() => setShowQtyModal(false)}
-                style={{ background: '#eee', color: '#1976d2', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-              >
-                Hủy
-              </button>
-            </div>
-            {addError && <div style={{ color: 'red', marginTop: 12 }}>{addError}</div>}
-          </div>
-        </div>
-      )}
+      <Dialog open={showQtyModal && !!selectedProduct} onClose={() => setShowQtyModal(false)}>
+        <DialogTitle>
+          Chọn số lượng cho <span style={{ color: '#1976d2' }}>{selectedProduct?.tenSanPham}</span>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            type="number"
+            label="Số lượng"
+            variant="outlined"
+            fullWidth
+            value={Number(qty)}
+            onChange={e => setQty(Number(e.target.value))}
+            inputProps={{ min: 1, max: selectedProduct?.soLuong }}
+            sx={{ mt: 2 }}
+            disabled={!orderId}
+          />
+          {addError && <Alert severity="error" sx={{ mt: 2 }}>{addError}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleAddToOrder} variant="contained" color="primary" disabled={qty < 1 || qty > selectedProduct?.soLuong}>
+            Xác nhận
+          </Button>
+          <Button onClick={() => setShowQtyModal(false)} variant="outlined" color="primary">
+            Hủy
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/* Modal sửa số lượng sản phẩm trong hóa đơn tạm */}
-      {showEditModal && editIdx !== null && cart[editIdx] && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: 12,
-            padding: 32,
-            minWidth: 320,
-            boxShadow: '0 8px 32px rgba(25,118,210,0.18)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}>
-            <h3 style={{ marginBottom: 16 }}>
-              Sửa số lượng cho <span style={{ color: '#1976d2' }}>{cart[editIdx].tenSanPham}</span>
-            </h3>
-            <input
-              type="number"
-              min={1}
-              value={editQty}
-              onChange={e => setEditQty(Number(e.target.value))}
-              style={{ fontSize: 18, padding: 8, width: 100, textAlign: 'center', marginBottom: 16, borderRadius: 6, border: '1px solid #1976d2' }}
-            />
-            <div style={{ display: 'flex', gap: 16, marginTop: 8 }}>
-              <button
-                onClick={handleEditQty}
-                style={{ background: '#1976d2', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-                disabled={editQty < 1}
-              >
-                Xác nhận
-              </button>
-              <button
-                onClick={() => setShowEditModal(false)}
-                style={{ background: '#eee', color: '#1976d2', border: 'none', borderRadius: 8, padding: '8px 20px', fontWeight: 600, fontSize: 16, cursor: 'pointer' }}
-              >
-                Hủy
-              </button>
-            </div>
-            {editError && <div style={{ color: 'red', marginTop: 12 }}>{editError}</div>}
-          </div>
-        </div>
-      )}
+      <Dialog open={showEditModal && editIdx !== null && cart[editIdx]} onClose={() => setShowEditModal(false)}>
+        <DialogTitle>
+          Sửa số lượng cho <span style={{ color: '#1976d2' }}>{cart[editIdx]?.tenSanPham}</span>
+        </DialogTitle>
+        <DialogContent>
+          <TextField
+            type="number"
+            label="Số lượng"
+            variant="outlined"
+            fullWidth
+            value={Number(editQty)}
+            onChange={e => setEditQty(Number(e.target.value))}
+            inputProps={{ min: 1 }}
+            sx={{ mt: 2 }}
+            disabled={!orderId}
+          />
+          {editError && <Alert severity="error" sx={{ mt: 2 }}>{editError}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleEditQty} variant="contained" color="primary" disabled={editQty < 1}>
+            Xác nhận
+          </Button>
+          <Button onClick={() => setShowEditModal(false)} variant="outlined" color="primary">
+            Hủy
+          </Button>
+        </DialogActions>
+      </Dialog>
       {/* Modal thanh toán */}
-      {showPaymentModal && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.25)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 9999,
-        }}>
-          <div style={{
-            background: '#fff',
-            borderRadius: 12,
-            padding: 32,
-            minWidth: 420,
-            boxShadow: '0 8px 32px rgba(25,118,210,0.18)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-            gap: 18
-          }}>
-            <h2 style={{margin: 0, marginBottom: 12}}>Thanh toán</h2>
-            <div style={{marginBottom: 8, width: '100%'}}>
-              <b>Số tiền cần thanh toán:</b> <span style={{color: '#1976d2', fontSize: 18, fontWeight: 700}}>{total.toLocaleString()} đ</span>
-            </div>
-            <div style={{marginBottom: 8, width: '100%'}}>
-              <label><b>Số tiền khách đưa:</b></label><br/>
-              <input
-                type="number"
-                min={0}
-                value={paymentAmount}
-                onChange={e => setPaymentAmount(Number(e.target.value))}
-                style={{fontSize: 18, padding: 8, width: 200, borderRadius: 6, border: '1px solid #1976d2'}}
-              />
-            </div>
-            <div style={{marginBottom: 8, width: '100%'}}>
-              <b>Phương thức thanh toán:</b>
-              <div style={{display: 'flex', gap: 12, marginTop: 6}}>
-                <button
-                  style={{
-                    background: paymentMethod === 'TIEN_MAT' ? '#1976d2' : '#fff',
-                    color: paymentMethod === 'TIEN_MAT' ? '#fff' : '#1976d2',
-                    border: '1px solid #1976d2',
-                    borderRadius: 8,
-                    padding: '6px 18px',
-                    fontWeight: 600,
-                    fontSize: 15,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onClick={() => setPaymentMethod('TIEN_MAT')}
-                >Tiền mặt</button>
-                <button
-                  style={{
-                    background: paymentMethod === 'CHUYEN_KHOAN' ? '#1976d2' : '#fff',
-                    color: paymentMethod === 'CHUYEN_KHOAN' ? '#fff' : '#1976d2',
-                    border: '1px solid #1976d2',
-                    borderRadius: 8,
-                    padding: '6px 18px',
-                    fontWeight: 600,
-                    fontSize: 15,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onClick={() => setPaymentMethod('CHUYEN_KHOAN')}
-                >Chuyển khoản</button>
-              </div>
-            </div>
-            <div style={{marginBottom: 8, width: '100%'}}>
-              {paymentAmount < total ? (
-                <span style={{color: 'red'}}>Khách thanh toán thiếu: {(total - paymentAmount).toLocaleString()} đ</span>
-              ) : (
-                <span style={{color: '#43b244'}}>Tiền thừa trả khách: {(paymentAmount - total).toLocaleString()} đ</span>
-              )}
-            </div>
-            <div style={{display: 'flex', gap: 16, marginTop: 12}}>
-              <button
-                onClick={handleConfirmPayment}
-                style={{background: '#43b244', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 700, fontSize: 16, cursor: 'pointer'}}
-                disabled={paymentAmount < total}
-              >
-                Xác nhận thanh toán
-              </button>
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                style={{background: '#eee', color: '#1976d2', border: 'none', borderRadius: 8, padding: '10px 28px', fontWeight: 700, fontSize: 16, cursor: 'pointer'}}
-              >
-                Đóng
-              </button>
+      <Dialog open={showPaymentModal} onClose={() => setShowPaymentModal(false)}>
+        <DialogTitle>Thanh toán</DialogTitle>
+        <DialogContent>
+          <div style={{ marginBottom: 8, width: '100%' }}>
+            <b>Số tiền cần thanh toán:</b> <span style={{ color: '#1976d2', fontSize: 18, fontWeight: 700 }}>{total.toLocaleString()} đ</span>
+          </div>
+          <TextField
+            type="number"
+            label="Số tiền khách đưa"
+            variant="outlined"
+            fullWidth
+            value={paymentAmount}
+            onChange={e => setPaymentAmount(Number(e.target.value))}
+            inputProps={{ min: 0 }}
+            sx={{ mb: 2 }}
+            disabled={!orderId}
+          />
+          <div style={{ marginBottom: 8, width: '100%' }}>
+            <b>Phương thức thanh toán:</b>
+            <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+              <Button
+                variant={paymentMethod === 'TIEN_MAT' ? 'contained' : 'outlined'}
+                color="primary"
+                onClick={() => setPaymentMethod('TIEN_MAT')}
+              >Tiền mặt</Button>
+              <Button
+                variant={paymentMethod === 'CHUYEN_KHOAN' ? 'contained' : 'outlined'}
+                color="primary"
+                onClick={() => setPaymentMethod('CHUYEN_KHOAN')}
+              >Chuyển khoản</Button>
             </div>
           </div>
-        </div>
-      )}
+          <div style={{ marginBottom: 8, width: '100%' }}>
+            {paymentAmount < total ? (
+              <Alert severity="warning">Khách thanh toán thiếu: {(total - paymentAmount).toLocaleString()} đ</Alert>
+            ) : (
+              <Alert severity="success">Tiền thừa trả khách: {(paymentAmount - total).toLocaleString()} đ</Alert>
+            )}
+          </div>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={handleConfirmPayment}
+            variant="contained"
+            color="success"
+            disabled={paymentAmount < total}
+          >
+            Xác nhận thanh toán
+          </Button>
+          <Button
+            onClick={() => setShowPaymentModal(false)}
+            variant="outlined"
+            color="primary"
+          >
+            Đóng
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* Thêm Snackbar/Alert cho thông báo */}
+      <Snackbar open={!!voucherMessage} autoHideDuration={2500} onClose={() => setVoucherMessage('')}>
+        <Alert onClose={() => setVoucherMessage('')} severity={voucherMessage.includes('thành công') ? 'success' : 'error'}>
+          {voucherMessage}
+        </Alert>
+      </Snackbar>
+      <Snackbar open={!!customerMessage} autoHideDuration={2500} onClose={() => setCustomerMessage('')}>
+        <Alert onClose={() => setCustomerMessage('')} severity={customerMessage.includes('thành công') ? 'success' : 'error'}>
+          {customerMessage}
+        </Alert>
+      </Snackbar>
     </div>
   );
 };

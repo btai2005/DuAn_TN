@@ -519,4 +519,8 @@ table:not(.cart-table) tr:last-child td {
   color: #fff;
   margin-bottom: 18px;
   letter-spacing: 1px;
+}
+
+.swal2-container {
+  z-index: 99999 !important;
 } 

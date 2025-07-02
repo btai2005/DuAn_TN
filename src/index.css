@@ -6,6 +6,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+.swal2-custom-popup {
+  max-height: 100px;      /* Giới hạn chiều cao tối đa */
+  overflow-y: auto;       /* Hiện thanh cuộn nếu nội dung vượt quá */
+}
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',

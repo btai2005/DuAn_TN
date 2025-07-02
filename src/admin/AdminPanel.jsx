@@ -17,7 +17,7 @@ import NhanVienPage from './NhanVienPage';
 import VoucherPage from './VoucherPage';
 import KhachHangPage from './KhachHangPage';
 import ThuocTinhPage from './ThuocTinhPage';
-import DonHangPage from '../pages/DonHangPage';
+import DonHangPage from './DonHangPage';
 import StatisticsPage from './StatisticsPage';
 import BanHangTaiQuayPage from './BanHangTaiQuayPage';
 import '../styles/AdminPanel.css';

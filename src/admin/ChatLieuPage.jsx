@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, Popconfirm } from 'antd';
-import { TagOutlined } from '@ant-design/icons';
+import Swal from 'sweetalert2';
 import '../styles/AdminPanel.css';
 import { message } from 'antd';
 
@@ -11,8 +11,6 @@ export default function ChatLieuPage() {
   const [editingItem, setEditingItem] = useState(null);
   const [form] = Form.useForm();
   const [chatLieus, setChatLieus] = useState([]);
-  const [kichThuocs, setKichThuocs] = useState([]);
-  const [xuatXus, setXuatXus] = useState([]);
 
   useEffect(() => {
     fetch('http://localhost:8080/api/chat-lieu/getAll')
@@ -91,13 +89,29 @@ export default function ChatLieuPage() {
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/chat-lieu/getAll')
             .then(res => res.json())
             .then(data => setChatLieus(data));
         })
         .catch(error => {
-          message.error('Thêm mới thất bại!');
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           console.error(error);
         });
     }
@@ -113,17 +127,41 @@ export default function ChatLieuPage() {
       body: JSON.stringify(values),
     })
       .then(response => {
-        if (!response.ok) throw new Error('Cập nhật thất bại');
+        Swal.fire({
+          icon: 'error',
+          title: 'Sửa thất bại',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500,
+          width: 250
+        });
         return response.json();
       })
       .then(data => {
-        message.success({ content: 'Cập nhật thành công!', duration: 2 });
+        Swal.fire({
+          icon: 'success',
+          title: 'Sửa thành công',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500,
+          width: 250
+        });
         fetch('http://localhost:8080/api/chat-lieu/getAll')
           .then(res => res.json())
           .then(data => setChatLieus(data));
       })
       .catch(error => {
-        message.error('Cập nhật thất bại!');
+        Swal.fire({
+          icon: 'success',
+          title: 'Sửa thất bại',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500,
+          width: 250
+        });
         console.error(error);
       });
   };

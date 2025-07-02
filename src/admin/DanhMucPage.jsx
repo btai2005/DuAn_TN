@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
 import { TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
@@ -78,11 +79,27 @@ export default function DanhMucPage() {
         }),
       })
         .then(response => {
-          if (!response.ok) throw new Error('Cập nhật thất bại');
+          Swal.fire({
+            icon: 'error',
+            title: 'Cập nhật thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Cập nhật thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Cập nhật thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/danh-muc/getAll')
             .then(res => res.json())
             .then(data => setDanhMucs(data));
@@ -106,13 +123,29 @@ export default function DanhMucPage() {
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/danh-muc/getAll')
             .then(res => res.json())
             .then(data => setDanhMucs(data));
         })
         .catch(error => {
-          message.error('Thêm mới thất bại!');
+          Swal.fire({
+            icon: 'error',
+            title: 'Thêm thất bạibại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           console.error(error);
         });
     }

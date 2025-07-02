@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, DatePicker, Select, Space, message, InputNumber, Popconfirm } from 'antd';
 import { TagOutlined, FileTextOutlined, CalendarOutlined, PoundOutlined, NumberOutlined, AlignLeftOutlined } from '@ant-design/icons';
 import moment from 'moment';
+import Swal from 'sweetalert2';
 import '../styles/AdminPanel.css'; // Import the CSS file
 import ProductManagementPage from './ProductManagementPage'; // Đảm bảo import này vẫn ở đó
 
@@ -103,13 +104,29 @@ export default function VoucherPage() {
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Cập nhật voucher thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Cập nhật thành thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/voucher')
             .then(res => res.json())
             .then(data => setVouchers(data));
         })
         .catch(error => {
-          message.error('Cập nhật thất bại!');
+          Swal.fire({
+            icon: 'success',
+            title: 'Cập nhật thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           console.error(error);
         });
     } else {
@@ -124,13 +141,29 @@ export default function VoucherPage() {
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Thêm voucher thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/voucher')
             .then(res => res.json())
             .then(data => setVouchers(data));
         })
         .catch(error => {
-          message.error('Thêm mới thất bại!');
+          Swal.fire({
+            icon: 'error',
+            title: 'Thêm thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           console.error(error);
         });
     }

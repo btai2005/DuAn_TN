@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import Swal from 'sweetalert2';
 import axios from "axios";
 import {
   
@@ -9,7 +10,6 @@ import {
 import "../styles/AdminPanel.css";
 import "../styles/SalePage.css";
 
-const { Option } = Select;
 
 const SanPhamPage = () => {
   const [products, setProducts] = useState([]);
@@ -62,6 +62,14 @@ const SanPhamPage = () => {
 
   // Thêm state upload cho form sửa
   const [uploadingEditImage, setUploadingEditImage] = useState(false);
+
+  // Thêm state cho lỗi tên sản phẩm
+  const [addNameError, setAddNameError] = useState("");
+  const [editNameError, setEditNameError] = useState("");
+
+  // State cho sửa biến thể
+  const [editSpct, setEditSpct] = useState(null);
+  const [showEditSpctModal, setShowEditSpctModal] = useState(false);
 
   // Lấy danh sách sản phẩm
   const fetchProducts = () => {
@@ -171,12 +179,8 @@ const SanPhamPage = () => {
   // Xử lý thêm sản phẩm
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    console.log("Giá trị form gửi lên:", addForm);
-    const missing = findMissingFields(addForm);
-    // if (missing.length > 0) {
-    //   alert("Bạn còn thiếu: " + missing.join(", "));
-    //   return;
-    // }
+    setAddNameError("");
+    setLoading(true);
     const data = {
       tenSanPham: addForm.tenSanPham,
       thuongHieu: {
@@ -196,7 +200,6 @@ const SanPhamPage = () => {
       },
       imanges: Array.isArray(addForm.imanges) ? addForm.imanges.join(',') : addForm.imanges
     };
-    setLoading(true);
     try {
       const res = await axios.post("http://localhost:8080/api/san-pham/add", {
         ...data,
@@ -218,30 +221,62 @@ const SanPhamPage = () => {
         imanges: ""
       });
       fetchProducts();
-      alert("Thêm sản phẩm thành công!");
-      // Lưu lại id sản phẩm vừa thêm (giả sử BE trả về id trong res.data.id)
+      Swal.fire({
+        icon: 'success',
+        title: 'Thêm sản phẩm thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
       setLastAddedProductId(res.data.id || null);
     } catch (err) {
-      alert("Thêm sản phẩm thất bại!");
+      if (err.response && err.response.data) {
+        const msg = typeof err.response.data === 'string'
+          ? err.response.data
+          : err.response.data.message;
+        setAddNameError(msg);
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Thêm sản phẩm thất bại',
+          text: err.message || 'Có lỗi xảy ra!',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1800,
+          width: 250
+        });
+      }
     }
     setLoading(false);
   };
 
   const handleAddSpct = async (e) => {
     e.preventDefault();
-    // Lấy id sản phẩm gốc: ưu tiên lastAddedProductId nếu có, nếu không thì lấy từ spctProduct
-    const productId = lastAddedProductId || (spctProduct && spctProduct.id);
-    if (!productId) {
-      alert("Không tìm thấy sản phẩm gốc!");
+    // Kiểm tra trùng ở FE (UX tốt hơn)
+    const isDuplicate = spctList.some(
+      (ct) =>
+        String(ct.mauSac?.id || ct.idMauSac) === String(spctForm.idMauSac) &&
+        String(ct.kichThuoc?.id || ct.idKichThuoc) === String(spctForm.idKichThuoc)
+    );
+    if (isDuplicate) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Biến thể này đã tồn tại!',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
       return;
     }
-    if (!spctForm.idMauSac || !spctForm.idKichThuoc || !spctForm.giaBan || !spctForm.soLuong) {
-      alert("Vui lòng nhập đầy đủ thông tin biến thể!");
-      return;
-    }
+    // Gửi lên BE
     try {
       await axios.post(
-        `http://localhost:8080/api/san-pham-chi-tiet/them/${productId}`,
+        `http://localhost:8080/api/san-pham-chi-tiet/them/${lastAddedProductId || (spctProduct && spctProduct.id)}`,
         {
           idKichThuoc: spctForm.idKichThuoc,
           idMauSac: spctForm.idMauSac,
@@ -249,21 +284,39 @@ const SanPhamPage = () => {
           giaBan: Number(spctForm.giaBan),
         }
       );
-      setSpctForm({ idMauSac: "", idKichThuoc: "", giaBan: "", soLuong: "" });
+      setSpctForm({ idMauSac: '', idKichThuoc: '', giaBan: '', soLuong: '' });
       // Reload lại danh sách biến thể
-      fetch(`http://localhost:8080/api/san-pham-chi-tiet/${productId}`)
+      fetch(`http://localhost:8080/api/san-pham-chi-tiet/${lastAddedProductId || (spctProduct && spctProduct.id)}`)
         .then(res => res.json())
         .then(data => setSpctList(Array.isArray(data) ? data : [data]))
         .catch(() => setSpctList([]));
-      alert("Thêm biến thể thành công!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Thêm biến thể thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
     } catch (err) {
-      alert("Thêm biến thể thất bại! " + (err.response?.data?.message || err.message));
+      // Xử lý lỗi trả về từ BE (trùng biến thể hoặc lỗi khác)
+      const msg = err.response?.data || err.message || 'Có lỗi xảy ra!';
+      Swal.fire({
+        icon: 'error',
+        title: 'Thêm biến thể thất bại!',
+        text: msg,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1800,
+        width: 250
+      });
     }
   };
 
   // Xử lý sửa sản phẩm
   const openEditModal = (product) => {
-    console.log(product);
     setEditId(product.id);
     setEditForm({
       tenSanPham: product.tenSanPham || "",
@@ -275,51 +328,64 @@ const SanPhamPage = () => {
       giaBan: product.giaBan || "",
       giaGiamGia: product.giaGiamGia || "",
       trangThai: product.trangThai,
+      imanges: product.imanges || ""
     });
     setShowEditModal(true);
   };
 
   const handleEditProduct = async (e) => {
     e.preventDefault();
-    console.log("Giá trị form gửi lên:", editForm);
-    const missing = findMissingFields(editForm);
+    setEditNameError("");
+    setLoading(true);
     const data = {
       tenSanPham: editForm.tenSanPham,
-      thuongHieu: {
-        id: editForm.idThuongHieu,
-      },
-      xuatXu: {
-        id: editForm.idXuatXu
-      },
-      
-      chatLieu: {
-        id: editForm.idChatLieu
-      },
-      danhMuc: {
-        id: editForm.idDanhMuc
-      }
+      thuongHieu: { id: editForm.idThuongHieu },
+      xuatXu: { id: editForm.idXuatXu },
+      chatLieu: { id: editForm.idChatLieu },
+      danhMuc: { id: editForm.idDanhMuc },
+      giaBan: Number(editForm.giaBan),
+      giaGiamGia: editForm.giaGiamGia ? Number(editForm.giaGiamGia) : 0,
+      trangThai: Number(editForm.trangThai),
+      imanges: editForm.imanges
     };
-    // if (missing.length > 0) {
-    //   alert("Bạn còn thiếu: " + missing.join(", "));
-    //   return;
-    // }
-    setLoading(true);
+    if (editForm.idKhuyenMai) {
+      data.khuyenMai = { id: editForm.idKhuyenMai };
+    } else {
+      data.khuyenMai = null;
+    }
     try {
-      await axios.put(`http://localhost:8080/api/san-pham/${editId}`, {
-        ...data,
-        giaBan: Number(editForm.giaBan),
-        giaGiamGia: editForm.giaGiamGia ? Number(editForm.giaGiamGia) : 0,
-        trangThai: Number(editForm.trangThai),
-        imanges: editForm.imanges
-      });
+      await axios.put(`http://localhost:8080/api/san-pham/${editId}`, data);
       setShowEditModal(false);
       setEditId(null);
       setEditForm({});
       fetchProducts();
-      alert("Cập nhật sản phẩm thành công!");
+      Swal.fire({
+        icon: 'success',
+        title: 'Cập nhật thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
     } catch (err) {
-      console.log("Lỗi cập nhật:", err.response?.data || err.message);
-      alert("Cập nhật sản phẩm thất bại!");
+      if (err.response && err.response.data) {
+        const msg = typeof err.response.data === 'string'
+          ? err.response.data
+          : err.response.data.message;
+        setEditNameError(msg);
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Cập nhật thất bại',
+          text: err.message || 'Có lỗi xảy ra!',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 1500,
+          width: 250
+        });
+      }
     }
     setLoading(false);
   };
@@ -429,6 +495,79 @@ const SanPhamPage = () => {
     setUploadingEditImage(false);
   };
 
+  const openEditSpctModal = (spct) => {
+    setEditSpct({ ...spct });
+    setShowEditSpctModal(true);
+  };
+  const closeEditSpctModal = () => {
+    setEditSpct(null);
+    setShowEditSpctModal(false);
+  };
+
+  const handleEditSpct = async (e) => {
+    e.preventDefault();
+    // Kiểm tra trùng ở FE (trừ chính biến thể đang sửa)
+    const isDuplicate = spctList.some(
+      (ct) =>
+        ct.id !== editSpct.id &&
+        String(ct.mauSac?.id || ct.idMauSac) === String(editSpct.mauSac?.id || editSpct.idMauSac) &&
+        String(ct.kichThuoc?.id || ct.idKichThuoc) === String(editSpct.kichThuoc?.id || editSpct.idKichThuoc)
+    );
+    if (isDuplicate) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Biến thể này đã tồn tại!',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
+      return;
+    }
+    // Gửi lên BE
+    try {
+      await axios.put(
+        `http://localhost:8080/api/san-pham-chi-tiet/sua/${editSpct.id}`,
+        {
+          giaBan: editSpct.giaBan,
+          soLuong: editSpct.soLuong,
+          idMauSac: editSpct.mauSac?.id || editSpct.idMauSac,
+          idKichThuoc: editSpct.kichThuoc?.id || editSpct.idKichThuoc,
+        }
+      );
+      Swal.fire({
+        icon: 'success',
+        title: 'Cập nhật biến thể thành công',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1500,
+        width: 250
+      });
+      closeEditSpctModal();
+      // Reload lại danh sách chi tiết
+      if (chiTietProduct) {
+        fetch(`http://localhost:8080/api/san-pham-chi-tiet/${chiTietProduct.id}`)
+          .then(res => res.json())
+          .then(data => setChiTietList(Array.isArray(data) ? data : [data]))
+          .catch(() => setChiTietList([]));
+      }
+    } catch (err) {
+      const msg = err.response?.data || err.message || 'Có lỗi xảy ra!';
+      Swal.fire({
+        icon: 'error',
+        title: 'Cập nhật thất bại',
+        text: msg,
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 1800,
+        width: 250
+      });
+    }
+  };
+
   return (
     <div
       className="banhang-container"
@@ -504,10 +643,9 @@ const SanPhamPage = () => {
                 required
                 placeholder="Tên sản phẩm"
                 value={addForm.tenSanPham}
-                onChange={(e) =>
-                  setAddForm((f) => ({ ...f, tenSanPham: e.target.value }))
-                }
+                onChange={(e) => setAddForm((f) => ({ ...f, tenSanPham: e.target.value }))}
               />
+              {addNameError && <span style={{ color: 'red' }}>{addNameError}</span>}
               <input
                 type="file"
                 accept="image/*"
@@ -674,10 +812,9 @@ const SanPhamPage = () => {
                 required
                 placeholder="Tên sản phẩm"
                 value={editForm.tenSanPham}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, tenSanPham: e.target.value }))
-                }
+                onChange={(e) => setEditForm((f) => ({ ...f, tenSanPham: e.target.value }))}
               />
+              {editNameError && <span style={{ color: 'red' }}>{editNameError}</span>}
               <input
                 type="file"
                 accept="image/*"
@@ -1050,6 +1187,7 @@ const SanPhamPage = () => {
                     <th>Kích thước</th>
                     <th>Giá bán</th>
                     <th>Số lượng</th>
+                    <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1064,6 +1202,9 @@ const SanPhamPage = () => {
                         <td>{ct.kichThuoc?.tenKichThuoc || "-"}</td>
                         <td>{ct.giaBan?.toLocaleString() || "-"}</td>
                         <td>{ct.soLuong ?? "-"}</td>
+                        <td>
+                          <button onClick={() => openEditSpctModal(ct)} style={{ background: "#43a047", color: "#fff", border: "none", borderRadius: 4, padding: "4px 10px", cursor: "pointer", opacity: 0.8 }}>Sửa</button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -1071,6 +1212,57 @@ const SanPhamPage = () => {
               </table>
             )}
             <button type="button" onClick={closeChiTietModal} style={{ background: "#e53935", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15, marginTop: 16 }}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal sửa biến thể */}
+      {showEditSpctModal && editSpct && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Sửa biến thể</h3>
+            <form onSubmit={handleEditSpct} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <label>Màu sắc:
+                <select
+                  value={editSpct.mauSac?.id || editSpct.idMauSac || ""}
+                  onChange={e => setEditSpct(f => ({
+                    ...f,
+                    mauSac: mauSacs.find(ms => ms.id === Number(e.target.value))
+                  }))}
+                  required
+                >
+                  <option value="">Chọn màu sắc</option>
+                  {mauSacs.map(ms => (
+                    <option key={ms.id} value={ms.id}>{ms.tenMauSac}</option>
+                  ))}
+                </select>
+              </label>
+              <label>Kích thước:
+                <select
+                  value={editSpct.kichThuoc?.id || editSpct.idKichThuoc || ""}
+                  onChange={e => setEditSpct(f => ({
+                    ...f,
+                    kichThuoc: kichThuocs.find(kt => kt.id === Number(e.target.value))
+                  }))}
+                  required
+                >
+                  <option value="">Chọn kích thước</option>
+                  {kichThuocs.map(kt => (
+                    <option key={kt.id} value={kt.id}>{kt.tenKichThuoc}</option>
+                  ))}
+                </select>
+              </label>
+              <label>Giá bán:
+                <input type="number" required value={editSpct.giaBan} onChange={e => setEditSpct(f => ({ ...f, giaBan: e.target.value }))} />
+              </label>
+              <label>Số lượng:
+                <input type="number" required value={editSpct.soLuong} onChange={e => setEditSpct(f => ({ ...f, soLuong: e.target.value }))} />
+              </label>
+              <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                <button type="submit" style={{ background: "#1976d2", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15 }}>Lưu</button>
+                <button type="button" onClick={closeEditSpctModal} style={{ background: "#e53935", color: "#fff", border: "none", borderRadius: 6, padding: "8px 18px", fontWeight: 600, fontSize: 15 }}>Hủy</button>
+              </div>
+            </form>
           </div>
         </div>
       )}

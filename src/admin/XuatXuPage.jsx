@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import Swal from 'sweetalert2';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
-import { GlobalOutlined, TagOutlined } from '@ant-design/icons';
+import {TagOutlined } from '@ant-design/icons';
 import '../styles/AdminPanel.css';
 
 const { Option } = Select;
@@ -90,17 +91,41 @@ export default function XuatXuPage() {
         }),
       })
         .then(response => {
-          if (!response.ok) throw new Error('Cập nhật thất bại');
+          Swal.fire({
+            icon: 'error',
+            title: 'Sửa thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Cập nhật thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Sửa thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/xuat-xu/getAll')
             .then(res => res.json())
             .then(data => setXuatXus(data));
         })
         .catch(error => {
-          message.error('Cập nhật thất bại!');
+          Swal.fire({
+            icon: 'error',
+            title: 'Sửa thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           console.error(error);
         });
     } else {
@@ -118,13 +143,29 @@ export default function XuatXuPage() {
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/xuat-xu/getAll')
             .then(res => res.json())
             .then(data => setXuatXus(data));
         })
         .catch(error => {
-          message.error('Thêm mới thất bại!');
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           console.error(error);
         });
     }

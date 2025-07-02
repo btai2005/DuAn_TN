@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Table, Button, Modal, Form, Input, Select, Space, message, Popconfirm } from 'antd';
 import { TagOutlined } from '@ant-design/icons';
+import Swal from 'sweetalert2';
 import '../styles/AdminPanel.css';
 
 const { Option } = Select;
@@ -79,11 +80,27 @@ export default function ThuongHieuPage() {
         }),
       })
         .then(response => {
-          if (!response.ok) throw new Error('Cập nhật thất bại');
+          Swal.fire({
+            icon: 'error',
+            title: 'Sửa thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Cập nhật thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Sửa thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/thuong-hieu/getAll')
             .then(res => res.json())
             .then(data => setThuongHieus(data));
@@ -103,11 +120,27 @@ export default function ThuongHieuPage() {
         }),
       })
         .then(response => {
-          if (!response.ok) throw new Error('Thêm mới thất bại');
+          Swal.fire({
+            icon: 'error',
+            title: 'Thêm thất bại',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           return response.json();
         })
         .then(data => {
-          message.success({ content: 'Thêm mới thành công!', duration: 2 });
+          Swal.fire({
+            icon: 'success',
+            title: 'Thêm thành công',
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            width: 250
+          });
           fetch('http://localhost:8080/api/thuong-hieu/getAll')
             .then(res => res.json())
             .then(data => setThuongHieus(data));
